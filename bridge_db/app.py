@@ -75,9 +75,33 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 /* ── サイドバー ─────────────────────────────────── */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #1e3a5f 0%, #14304f 100%);
+    min-width: 240px !important;
 }
 [data-testid="stSidebar"] * { color: #e2e8f0 !important; }
-[data-testid="stSidebar"] .stRadio label { color: #cbd5e1 !important; }
+
+/* メニュー項目を大きく・余白を広く */
+[data-testid="stSidebar"] .stRadio > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.2rem !important;
+}
+[data-testid="stSidebar"] .stRadio label {
+    padding: 0.7rem 1rem !important;
+    border-radius: 10px !important;
+    transition: background 0.15s !important;
+    cursor: pointer !important;
+}
+[data-testid="stSidebar"] .stRadio label:hover {
+    background: rgba(255,255,255,0.12) !important;
+}
+[data-testid="stSidebar"] .stRadio label p {
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    color: #e2e8f0 !important;
+    letter-spacing: 0.01em !important;
+    line-height: 1.4 !important;
+}
+
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
     color: #94a3b8 !important; font-size: 0.78rem;
 }
@@ -683,15 +707,18 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
 inject_css()
 
 st.sidebar.markdown("""
-<div style="padding:1rem 0.5rem 0.5rem;">
-  <div style="font-size:1.4rem; font-weight:800; color:#f1f5f9; letter-spacing:0.02em;">
+<div style="padding:1.2rem 0.8rem 0.6rem;">
+  <div style="font-size:1.6rem; font-weight:900; color:#f1f5f9; letter-spacing:0.02em; line-height:1.2;">
     🌉 橋梁管理
   </div>
-  <div style="font-size:0.72rem; color:#94a3b8; margin-top:0.2rem;">
+  <div style="font-size:0.78rem; color:#94a3b8; margin-top:0.3rem; font-weight:500; letter-spacing:0.04em;">
     Bridge Inspection System
   </div>
 </div>
-<hr style="border-color:#334155; margin:0.5rem 0 1rem;">
+<hr style="border-color:#2d4a6b; margin:0.4rem 0 0.8rem;">
+<div style="padding:0 0.5rem 0.5rem; font-size:0.72rem; color:#64748b; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
+  ナビゲーション
+</div>
 """, unsafe_allow_html=True)
 
 page = st.sidebar.radio(
@@ -701,10 +728,11 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("""
-<hr style="border-color:#334155; margin:1.5rem 0 0.5rem;">
-<div style="font-size:0.72rem; color:#475569; padding:0 0.5rem 1rem;">
-  国土交通省「橋梁定期点検要領」準拠<br>
-  SQLite + Streamlit
+<hr style="border-color:#2d4a6b; margin:1.5rem 0 0.8rem;">
+<div style="font-size:0.76rem; color:#475569; padding:0 0.8rem 1.2rem; line-height:1.8;">
+  📋 国土交通省<br>
+  　橋梁定期点検要領 準拠<br>
+  🗄️ SQLite + Streamlit
 </div>
 """, unsafe_allow_html=True)
 
