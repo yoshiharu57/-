@@ -110,15 +110,16 @@ CREATE TABLE IF NOT EXISTS repairs (
 CREATE INDEX IF NOT EXISTS idx_repairs_bridge ON repairs(bridge_id);
 
 -- =========================================================
--- 5. 写真・添付ファイル管理
+-- 5. 写真データ管理
 -- =========================================================
 CREATE TABLE IF NOT EXISTS photos (
     photo_id            INTEGER PRIMARY KEY AUTOINCREMENT,
     bridge_id           INTEGER NOT NULL REFERENCES bridges(bridge_id) ON DELETE CASCADE,
     inspection_id       INTEGER REFERENCES inspections(inspection_id),
 
-    photo_path          TEXT NOT NULL,          -- ファイルパス（相対パス）
-    photo_type          TEXT,                   -- 写真種別（全景/損傷/補修後）
+    photo_path          TEXT NOT NULL,          -- ファイルパス（storage/ からの相対パス）
+    file_name           TEXT NOT NULL,          -- 元ファイル名
+    photo_type          TEXT,                   -- 写真種別（全景/損傷/補修後/その他）
     description         TEXT,                   -- 説明文
     taken_at            TEXT,                   -- 撮影日時
 
@@ -129,7 +130,26 @@ CREATE INDEX IF NOT EXISTS idx_photos_bridge     ON photos(bridge_id);
 CREATE INDEX IF NOT EXISTS idx_photos_inspection ON photos(inspection_id);
 
 -- =========================================================
--- 6. ビュー: 橋梁一覧（最新点検情報付き）
+-- 6. 調査様式・帳票ファイル管理
+-- =========================================================
+CREATE TABLE IF NOT EXISTS documents (
+    doc_id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    bridge_id           INTEGER NOT NULL REFERENCES bridges(bridge_id) ON DELETE CASCADE,
+    inspection_id       INTEGER REFERENCES inspections(inspection_id),
+
+    doc_path            TEXT NOT NULL,          -- ファイルパス（storage/ からの相対パス）
+    file_name           TEXT NOT NULL,          -- 元ファイル名
+    doc_type            TEXT,                   -- 種別（点検調書/損傷図/補修設計書/その他）
+    file_size           INTEGER,                -- ファイルサイズ（バイト）
+    description         TEXT,                   -- 説明・備考
+    uploaded_at         TEXT DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_documents_bridge     ON documents(bridge_id);
+CREATE INDEX IF NOT EXISTS idx_documents_inspection ON documents(inspection_id);
+
+-- =========================================================
+-- 7. ビュー: 橋梁一覧（最新点検情報付き）
 -- =========================================================
 CREATE VIEW IF NOT EXISTS v_bridges_latest AS
 SELECT

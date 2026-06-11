@@ -4,6 +4,7 @@
 """
 
 import sqlite3
+import shutil
 from pathlib import Path
 
 import folium
@@ -11,7 +12,13 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
-DB_PATH = Path(__file__).parent / "data" / "bridges.db"
+DB_PATH      = Path(__file__).parent / "data" / "bridges.db"
+STORAGE_ROOT = Path(__file__).parent / "storage" / "bridges"
+
+PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".webp"}
+DOC_EXTS   = {".pdf", ".xlsx", ".xls", ".docx", ".doc", ".csv"}
+PHOTO_TYPES_LIST = ["全景", "損傷", "補修後", "その他"]
+DOC_TYPES_LIST   = ["点検調書", "損傷図", "補修設計書", "その他"]
 
 # ──────────────────────────────────────────────────────────
 # ページ設定
@@ -66,6 +73,196 @@ def get_connection():
 
 def query_df(sql: str, params=()) -> pd.DataFrame:
     return pd.read_sql_query(sql, get_connection(), params=params)
+
+
+# ──────────────────────────────────────────────────────────
+# ファイル管理ヘルパー
+# ──────────────────────────────────────────────────────────
+
+def _safe_filename(name: str) -> str:
+    """ファイル名からパス区切りなどの危険文字を除去する"""
+    return Path(name).name.replace("..", "").replace("/", "").replace("\\", "")
+
+
+def _insp_options(bridge_id: int) -> list[str]:
+    df = query_df(
+        "SELECT inspection_id, inspection_date, inspection_type FROM inspections "
+        "WHERE bridge_id=? ORDER BY inspection_date DESC",
+        (bridge_id,),
+    )
+    return [f"{r['inspection_date']} {r['inspection_type']} (id={r['inspection_id']})"
+            for _, r in df.iterrows()]
+
+
+def _insp_id_from_label(bridge_id: int, label: str):
+    if label == "なし" or not label:
+        return None
+    try:
+        return int(label.split("id=")[1].rstrip(")"))
+    except Exception:
+        return None
+
+
+def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Path):
+    """📁 ファイル管理タブの描画"""
+    con = get_connection()
+
+    st.caption(
+        f"📂 ストレージ: `storage/bridges/{bridge_code}/`　"
+        f"（photos/ と forms/ に直接ファイルを置くことも可能です）"
+    )
+
+    sec_photo, sec_form = st.columns(2)
+
+    # ── 写真データ ──────────────────────────────────────────
+    with sec_photo:
+        st.subheader("📷 写真データ")
+
+        with st.expander("＋ 写真を追加", expanded=False):
+            up_photo = st.file_uploader(
+                "写真ファイル（JPG/PNG）",
+                type=["jpg", "jpeg", "png", "webp"],
+                accept_multiple_files=True,
+                key=f"up_photo_{bridge_id}",
+            )
+            p_type = st.selectbox("写真種別", PHOTO_TYPES_LIST, key=f"pt_{bridge_id}")
+            p_desc = st.text_input("説明（任意）", key=f"pd_{bridge_id}")
+            p_date = st.date_input("撮影日", key=f"pdate_{bridge_id}")
+            insp_opts = _insp_options(bridge_id)
+            p_insp = st.selectbox("関連点検（任意）", ["なし"] + insp_opts, key=f"pi_{bridge_id}")
+
+            if st.button("写真を保存", key=f"pbtn_{bridge_id}") and up_photo:
+                for uf in up_photo:
+                    safe_name = _safe_filename(uf.name)
+                    (photos_dir / safe_name).write_bytes(uf.getvalue())
+                    rel_path = f"bridges/{bridge_code}/photos/{safe_name}"
+                    iid = _insp_id_from_label(bridge_id, p_insp)
+                    con.execute(
+                        "INSERT INTO photos (bridge_id, inspection_id, photo_path, "
+                        "file_name, photo_type, description, taken_at) "
+                        "VALUES (?,?,?,?,?,?,?)",
+                        (bridge_id, iid, rel_path, safe_name, p_type, p_desc or None, str(p_date)),
+                    )
+                con.commit()
+                st.success(f"{len(up_photo)}件の写真を保存しました")
+                st.rerun()
+
+        db_photos = query_df(
+            "SELECT photo_id, photo_path, file_name, photo_type, description, taken_at "
+            "FROM photos WHERE bridge_id=? ORDER BY taken_at DESC",
+            (bridge_id,),
+        )
+        disk_photos = [p for p in sorted(photos_dir.glob("*"))
+                       if p.suffix.lower() in PHOTO_EXTS]
+
+        if not db_photos.empty:
+            st.markdown(f"**登録済み写真: {len(db_photos)}件**")
+            cols = st.columns(3)
+            for i, (_, row) in enumerate(db_photos.iterrows()):
+                img_path = STORAGE_ROOT / bridge_code / "photos" / row["file_name"]
+                with cols[i % 3]:
+                    if img_path.exists():
+                        st.image(str(img_path), use_container_width=True)
+                    else:
+                        st.warning("ファイルなし")
+                    st.caption(
+                        f"**{row['photo_type'] or '-'}**　{row['taken_at'] or ''}\n\n"
+                        f"{row['description'] or ''}"
+                    )
+                    if img_path.exists():
+                        st.download_button(
+                            "⬇ DL", img_path.read_bytes(),
+                            file_name=row["file_name"], key=f"dphoto_{row['photo_id']}",
+                        )
+        elif disk_photos:
+            st.markdown(f"**フォルダ内の写真: {len(disk_photos)}件**（DB未登録）")
+            cols = st.columns(3)
+            for i, p in enumerate(disk_photos):
+                with cols[i % 3]:
+                    st.image(str(p), use_container_width=True)
+                    st.caption(p.name)
+        else:
+            st.info("写真はまだ登録されていません。")
+
+    # ── 調査様式・帳票 ─────────────────────────────────────
+    with sec_form:
+        st.subheader("📄 調査様式・帳票")
+        FILE_ICONS = {
+            ".pdf": "📕", ".xlsx": "📗", ".xls": "📗",
+            ".docx": "📘", ".doc": "📘", ".csv": "📊",
+        }
+
+        with st.expander("＋ ファイルを追加", expanded=False):
+            up_doc = st.file_uploader(
+                "ファイル（PDF/Excel/Word）",
+                type=["pdf", "xlsx", "xls", "docx", "doc", "csv"],
+                accept_multiple_files=True,
+                key=f"up_doc_{bridge_id}",
+            )
+            d_type = st.selectbox("種別", DOC_TYPES_LIST, key=f"dt_{bridge_id}")
+            d_desc = st.text_input("説明（任意）", key=f"dd_{bridge_id}")
+            insp_opts2 = _insp_options(bridge_id)
+            d_insp = st.selectbox("関連点検（任意）", ["なし"] + insp_opts2, key=f"di_{bridge_id}")
+
+            if st.button("ファイルを保存", key=f"dbtn_{bridge_id}") and up_doc:
+                for uf in up_doc:
+                    safe_name = _safe_filename(uf.name)
+                    data = uf.getvalue()
+                    (forms_dir / safe_name).write_bytes(data)
+                    rel_path = f"bridges/{bridge_code}/forms/{safe_name}"
+                    iid = _insp_id_from_label(bridge_id, d_insp)
+                    con.execute(
+                        "INSERT INTO documents (bridge_id, inspection_id, doc_path, "
+                        "file_name, doc_type, file_size, description, uploaded_at) "
+                        "VALUES (?,?,?,?,?,?,?,datetime('now','localtime'))",
+                        (bridge_id, iid, rel_path, safe_name, d_type, len(data), d_desc or None),
+                    )
+                con.commit()
+                st.success(f"{len(up_doc)}件のファイルを保存しました")
+                st.rerun()
+
+        db_docs = query_df(
+            "SELECT doc_id, doc_path, file_name, doc_type, file_size, description, uploaded_at "
+            "FROM documents WHERE bridge_id=? ORDER BY uploaded_at DESC",
+            (bridge_id,),
+        )
+        disk_docs = [p for p in sorted(forms_dir.glob("*"))
+                     if p.suffix.lower() in DOC_EXTS]
+
+        if not db_docs.empty:
+            st.markdown(f"**登録済みファイル: {len(db_docs)}件**")
+            for _, row in db_docs.iterrows():
+                f_path = STORAGE_ROOT / bridge_code / "forms" / row["file_name"]
+                icon = FILE_ICONS.get(Path(row["file_name"]).suffix.lower(), "📎")
+                size_kb = f"{row['file_size'] // 1024} KB" if row["file_size"] else "-"
+                c1, c2 = st.columns([4, 1])
+                with c1:
+                    st.markdown(
+                        f"{icon} **{row['file_name']}**　"
+                        f"`{row['doc_type'] or '-'}`　{size_kb}　"
+                        f"_{row['uploaded_at'] or ''}_"
+                    )
+                    if row["description"]:
+                        st.caption(row["description"])
+                with c2:
+                    if f_path.exists():
+                        st.download_button(
+                            "⬇ DL", f_path.read_bytes(),
+                            file_name=row["file_name"], key=f"ddoc_{row['doc_id']}",
+                        )
+                    else:
+                        st.caption("⚠ファイルなし")
+                st.divider()
+        elif disk_docs:
+            st.markdown(f"**フォルダ内のファイル: {len(disk_docs)}件**（DB未登録）")
+            for p in disk_docs:
+                icon = FILE_ICONS.get(p.suffix.lower(), "📎")
+                c1, c2 = st.columns([4, 1])
+                c1.markdown(f"{icon} {p.name}")
+                c2.download_button("⬇ DL", p.read_bytes(), file_name=p.name,
+                                   key=f"ddisk_{p.name}")
+        else:
+            st.info("帳票・調査様式はまだ登録されていません。")
 
 
 # ──────────────────────────────────────────────────────────
@@ -295,7 +492,14 @@ elif page == "🔍 橋梁詳細":
         unsafe_allow_html=True,
     )
 
-    tab1, tab2, tab3 = st.tabs(["基本情報", "点検履歴", "補修履歴"])
+    bridge_code = b["bridge_code"]
+    bridge_dir  = STORAGE_ROOT / bridge_code
+    photos_dir  = bridge_dir / "photos"
+    forms_dir   = bridge_dir / "forms"
+    photos_dir.mkdir(parents=True, exist_ok=True)
+    forms_dir.mkdir(parents=True, exist_ok=True)
+
+    tab1, tab2, tab3, tab4 = st.tabs(["基本情報", "点検履歴", "補修履歴", "📁 ファイル管理"])
 
     with tab1:
         col_a, col_b = st.columns(2)
@@ -393,6 +597,9 @@ elif page == "🔍 橋梁詳細":
                 hide_index=True,
                 use_container_width=True,
             )
+
+    with tab4:
+        _tab_files(bridge_id, bridge_code, photos_dir, forms_dir)
 
 
 # ──────────────────────────────────────────────────────────

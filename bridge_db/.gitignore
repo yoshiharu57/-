@@ -1,5 +1,10 @@
 data/
-photos/
 __pycache__/
 *.pyc
 .streamlit/
+
+# ストレージ: 実ファイルは除外、フォルダ構造（README）は保持
+storage/bridges/*/photos/*
+storage/bridges/*/forms/*
+!storage/bridges/*/photos/README.md
+!storage/bridges/*/forms/README.md
