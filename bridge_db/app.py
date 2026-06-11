@@ -521,11 +521,6 @@ elif page == "🔍 橋梁詳細":
                 ],
             }))
             if gmap:
-                st.markdown(
-                    f"📍 所在地: **{b['location_name'] or ''}**　"
-                    f"[Googleマップで開く]({gmap}){{target='_blank'}}",
-                    unsafe_allow_html=False,
-                )
                 st.link_button("🗺️ Googleマップで現地確認", gmap)
         with col_b:
             st.markdown("**諸元**")
