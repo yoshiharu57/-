@@ -96,38 +96,91 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 }
 .page-header p { margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.75; color: white; }
 
-/* ── カード（POP デザイン）──────────────────────── */
+/* ── カード（全面カラー）────────────────────────── */
 .metric-card {
-    background: white;
-    border-radius: 18px;
-    padding: 1.4rem 1.5rem;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+    border-radius: 16px;
+    padding: 1.2rem 1.4rem;
+    display: flex; align-items: center; gap: 1rem;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    transition: transform 0.12s, box-shadow 0.12s;
     height: 100%;
-    position: relative; overflow: hidden;
-    transition: transform 0.15s;
+    min-height: 100px;
 }
-.metric-card:hover { transform: translateY(-2px); }
-.metric-card::after {
-    content: ''; position: absolute;
-    bottom: -20px; right: -20px;
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    opacity: 0.08;
-    background: var(--mc-color, #2563eb);
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.20);
 }
-.metric-card .mc-icon {
-    font-size: 2rem; margin-bottom: 0.4rem; display: block;
+.metric-card .mc-icon-wrap {
+    background: rgba(255,255,255,0.22);
+    border-radius: 12px;
+    width: 54px; height: 54px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.9rem;
+}
+.metric-card .mc-body { flex: 1; min-width: 0; }
+.metric-card .mc-value {
+    font-size: 2.5rem; font-weight: 900; line-height: 1.0;
+    color: white;
 }
 .metric-card .mc-label {
     font-size: 0.82rem; font-weight: 600;
-    color: #64748b; letter-spacing: 0.04em;
-    margin-bottom: 0.3rem;
-}
-.metric-card .mc-value {
-    font-size: 2.8rem; font-weight: 800; line-height: 1.0;
+    color: rgba(255,255,255,0.88); margin-top: 0.25rem;
 }
 .metric-card .mc-sub {
-    font-size: 0.82rem; color: #94a3b8; margin-top: 0.3rem;
+    font-size: 0.75rem; color: rgba(255,255,255,0.65);
+}
+
+/* ── 橋梁一覧テーブル ───────────────────────────── */
+.bridge-table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    margin-bottom: 0.8rem;
+}
+.bridge-list-table {
+    width: 100%; border-collapse: collapse;
+    background: white; font-size: 0.92rem;
+}
+.bridge-list-table thead tr {
+    background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 100%);
+}
+.bridge-list-table th {
+    color: white; padding: 0.85rem 0.9rem;
+    font-weight: 700; font-size: 0.86rem;
+    white-space: nowrap; text-align: left;
+}
+.bridge-list-table td {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap; color: #334155;
+}
+.bridge-list-table tbody tr:hover { background: #eff6ff; }
+.bridge-list-table .bridge-code {
+    color: #dc2626; font-weight: 700; font-size: 0.9rem;
+}
+.map-link {
+    display: inline-block;
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    border-radius: 6px; padding: 3px 10px;
+    color: #2563eb; text-decoration: none;
+    font-size: 0.82rem; font-weight: 600;
+}
+.map-link:hover { background: #dbeafe; }
+
+/* ── ランク凡例 ─────────────────────────────────── */
+.rank-legend {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    background: white; border-radius: 10px;
+    padding: 0.7rem 1.2rem;
+    border: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+}
+.rank-legend .rl-item {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.84rem; color: #475569; font-weight: 600;
+}
+.rank-legend .rl-dot {
+    display: inline-block; width: 12px; height: 12px; border-radius: 50%;
 }
 
 /* ── セクションヘッダー ─────────────────────────── */
@@ -365,12 +418,70 @@ def rank_badge(rank: str) -> str:
 
 def metric_card(label: str, value: str, sub: str = "", color: str = "#2563eb", icon: str = "🌉") -> str:
     return f"""
-<div class="metric-card" style="--mc-color:{color}; border-top: 5px solid {color}">
-  <div class="mc-icon">{icon}</div>
-  <div class="mc-value" style="color:{color}">{value}</div>
-  <div class="mc-label">{label}</div>
-  <div class="mc-sub">{sub}</div>
+<div class="metric-card" style="background:linear-gradient(135deg,{color} 0%,{color}cc 100%)">
+  <div class="mc-icon-wrap">{icon}</div>
+  <div class="mc-body">
+    <div class="mc-value">{value}</div>
+    <div class="mc-label">{label}</div>
+    <div class="mc-sub">{sub}</div>
+  </div>
 </div>"""
+
+
+def render_bridge_table(df) -> str:
+    """橋梁一覧をHTML表で描画する（管理番号赤字・地図ボタン・健全度ドット付き）"""
+    RANK_DOT = {
+        "I":   "#16a34a",
+        "II":  "#d97706",
+        "III": "#ea580c",
+        "IV":  "#dc2626",
+    }
+    rows = []
+    for _, r in df.iterrows():
+        rank     = str(r.get("current_health_rank") or "-")
+        dot_color = RANK_DOT.get(rank, "#94a3b8")
+        dot      = (f'<span style="display:inline-block;width:13px;height:13px;'
+                    f'border-radius:50%;background:{dot_color};'
+                    f'vertical-align:middle;margin-right:5px;"></span>')
+
+        lat, lon = r.get("latitude"), r.get("longitude")
+        if lat and lon:
+            url = f"https://www.google.com/maps?q={lat},{lon}&z=17"
+            map_cell = f'<a href="{url}" target="_blank" class="map-link">📍 地図</a>'
+        else:
+            map_cell = '<span style="color:#94a3b8">-</span>'
+
+        last_date = r.get("last_inspection_date") or "-"
+        last_cell = (f'<span style="color:#475569">📅 {last_date}</span>'
+                     if last_date != "-" else "-")
+        next_yr   = r.get("next_inspection_year")
+        next_cell = (f'<span style="color:#475569">📅 {next_yr}年</span>'
+                     if next_yr else "-")
+        access    = str(r.get("access_method") or "-")
+        insp_cnt  = int(r.get("insp_count") or 0)
+
+        rows.append(f"""<tr>
+          <td><span class="bridge-code">{r['bridge_code']}</span></td>
+          <td><strong>{r['bridge_name']}</strong></td>
+          <td>{r.get('route_name') or '-'}</td>
+          <td>{r.get('location_name') or '-'}</td>
+          <td>{map_cell}</td>
+          <td>{last_cell}</td>
+          <td>{next_cell}</td>
+          <td>{dot}{rank}</td>
+          <td>{access}</td>
+          <td style="text-align:center;color:#64748b">{insp_cnt}</td>
+        </tr>""")
+
+    rows_html = "\n".join(rows) if rows else "<tr><td colspan='10' style='text-align:center;padding:2rem;color:#94a3b8'>該当する橋梁がありません</td></tr>"
+    return f"""<div class="bridge-table-wrap"><table class="bridge-list-table">
+  <thead><tr>
+    <th>管理番号</th><th>橋梁名</th><th>路線名</th><th>所在地</th>
+    <th>地図</th><th>前回点検</th><th>次回点検予定</th>
+    <th>健全性</th><th>点検足場</th><th>点検数</th>
+  </tr></thead>
+  <tbody>{rows_html}</tbody>
+</table></div>"""
 
 
 def gmaps_url(lat, lon) -> str | None:
@@ -611,14 +722,14 @@ if page == "📊 ダッシュボード":
     rank_counts = dict(zip(df_summary["current_health_rank"], df_summary["cnt"]))
     total = sum(rank_counts.values())
 
-    # ── メトリクスカード（POP）────────────────────────────
+    # ── メトリクスカード（全面カラー）────────────────────
     cols = st.columns(5)
     cards = [
-        ("管理橋梁数（総計）", f"{total}",                      "全管理橋梁",   "#2563eb", "🌉"),
-        ("I : 健全",           f"{rank_counts.get('I', 0)}",    "措置不要",     RANK_COLOR["I"],   "🟢"),
-        ("II : 予防保全",      f"{rank_counts.get('II', 0)}",   "監視・保全措置", RANK_COLOR["II"],  "🟡"),
-        ("III : 早期措置",     f"{rank_counts.get('III', 0)}",  "早期補修必要", RANK_COLOR["III"], "🟠"),
-        ("IV : 緊急措置",      f"{rank_counts.get('IV', 0)}",   "緊急補修・規制検討", RANK_COLOR["IV"],  "🔴"),
+        ("管理橋梁数（総計）", f"{total}",                     "全管理橋梁",         "#2563eb", "🌉"),
+        ("I : 健全",           f"{rank_counts.get('I', 0)}",   "措置不要",           RANK_COLOR["I"],   "✅"),
+        ("II : 予防保全",      f"{rank_counts.get('II', 0)}",  "監視・予防保全措置", RANK_COLOR["II"],  "🔔"),
+        ("III : 早期措置",     f"{rank_counts.get('III', 0)}", "早期補修が必要",     RANK_COLOR["III"], "⚠️"),
+        ("IV : 緊急措置",      f"{rank_counts.get('IV', 0)}",  "緊急補修・通行規制検討", RANK_COLOR["IV"], "🚨"),
     ]
     for col, (label, val, sub, color, icon) in zip(cols, cards):
         with col:
@@ -650,11 +761,11 @@ if page == "📊 ダッシュボード":
             st.success("現在、緊急・早期措置が必要な橋梁はありません。")
         else:
             for _, r in df_urgent.iterrows():
-                is_iv  = r["current_health_rank"] == "IV"
-                cls    = "" if is_iv else "warn"
-                icon   = "🚨" if is_iv else "⚠️"
-                cm     = COUNTERMEASURE_LABEL.get(r["last_countermeasure"], r["last_countermeasure"] or "-")
-                date   = r["last_inspection_date"] or "未点検"
+                is_iv = r["current_health_rank"] == "IV"
+                cls   = "" if is_iv else "warn"
+                icon  = "🚨" if is_iv else "⚠️"
+                cm    = COUNTERMEASURE_LABEL.get(r["last_countermeasure"], r["last_countermeasure"] or "-")
+                date  = r["last_inspection_date"] or "未点検"
                 st.markdown(f"""
 <div class="alert-card {cls}">
   <div class="ac-icon">{icon}</div>
@@ -672,25 +783,24 @@ if page == "📊 ダッシュボード":
     # ── 橋梁一覧テーブル ──────────────────────────────────
     section_header("🌉", "橋梁一覧")
 
-    RANK_DISPLAY = {
-        "I":   "🟢 I  健全",
-        "II":  "🟡 II 予防保全",
-        "III": "🟠 III 早期措置",
-        "IV":  "🔴 IV 緊急措置",
-    }
+    # 検索バー
+    col_kw, _ = st.columns([3, 1])
+    with col_kw:
+        kw = st.text_input(
+            "", placeholder="🔍 橋梁名・管理番号・場所で検索...",
+            label_visibility="collapsed",
+        )
 
     df_list = query_df(
         """SELECT
-               b.bridge_code     AS 管理番号,
-               b.bridge_name     AS 橋梁名,
-               r.route_name      AS 路線名,
-               b.location_name   AS 場所,
-               CASE WHEN b.latitude IS NOT NULL AND b.longitude IS NOT NULL
-                    THEN 'https://www.google.com/maps?q=' || b.latitude || ',' || b.longitude || '&z=17'
-                    ELSE NULL END AS GoogleMAP,
-               SUBSTR(i.inspection_date, 1, 4) AS 前回点検年,
-               COALESCE(i.access_method, '未記録') AS 点検足場,
-               b.current_health_rank AS _rank
+               b.bridge_code, b.bridge_name,
+               r.route_name, b.location_name,
+               b.latitude, b.longitude,
+               i.inspection_date          AS last_inspection_date,
+               i.next_inspection_year,
+               COALESCE(i.access_method, '未記録') AS access_method,
+               b.current_health_rank,
+               (SELECT COUNT(*) FROM inspections WHERE bridge_id = b.bridge_id) AS insp_count
            FROM bridges b
            LEFT JOIN routes r ON b.route_id = r.route_id
            LEFT JOIN inspections i ON i.inspection_id = (
@@ -701,27 +811,31 @@ if page == "📊 ダッシュボード":
            WHERE b.is_active = 1
            ORDER BY b.bridge_code"""
     )
-    df_list["健全度"] = df_list["_rank"].map(RANK_DISPLAY).fillna(df_list["_rank"])
-    df_list = df_list.drop(columns=["_rank"])
 
-    st.dataframe(
-        df_list,
-        hide_index=True,
-        use_container_width=True,
-        height=420,
-        column_config={
-            "GoogleMAP": st.column_config.LinkColumn(
-                "📍 GoogleMAP", display_text="地図を開く"
-            ),
-            "管理番号":  st.column_config.TextColumn("管理番号",  width="small"),
-            "橋梁名":    st.column_config.TextColumn("橋梁名",    width="medium"),
-            "路線名":    st.column_config.TextColumn("路線名",    width="medium"),
-            "場所":      st.column_config.TextColumn("場所",      width="medium"),
-            "前回点検年": st.column_config.TextColumn("前回点検年", width="small"),
-            "点検足場":  st.column_config.TextColumn("点検足場",  width="medium"),
-            "健全度":    st.column_config.TextColumn("健全度",    width="medium"),
-        },
+    if kw:
+        mask = (
+            df_list["bridge_code"].str.contains(kw, case=False, na=False) |
+            df_list["bridge_name"].str.contains(kw, case=False, na=False) |
+            df_list["location_name"].fillna("").str.contains(kw, case=False, na=False)
+        )
+        df_list = df_list[mask]
+
+    st.markdown(
+        f'<p style="color:#64748b;font-size:0.86rem;margin-bottom:0.5rem;">'
+        f'管理橋梁数: <strong>{len(df_list)}</strong>件</p>',
+        unsafe_allow_html=True,
     )
+    st.markdown(render_bridge_table(df_list), unsafe_allow_html=True)
+
+    # 凡例
+    st.markdown("""
+<div class="rank-legend">
+  <span class="rl-item"><span class="rl-dot" style="background:#16a34a"></span>I : 健全</span>
+  <span class="rl-item"><span class="rl-dot" style="background:#d97706"></span>II : 予防保全段階</span>
+  <span class="rl-item"><span class="rl-dot" style="background:#ea580c"></span>III : 早期措置段階</span>
+  <span class="rl-item"><span class="rl-dot" style="background:#dc2626"></span>IV : 緊急措置段階</span>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ──────────────────────────────────────────────────────────
