@@ -43,6 +43,13 @@ COUNTERMEASURE_LABEL = {
 }
 
 
+def gmaps_url(lat, lon) -> str | None:
+    """緯度経度からGoogleマップURLを生成する"""
+    if lat and lon:
+        return f"https://www.google.com/maps?q={lat},{lon}&z=17"
+    return None
+
+
 # ──────────────────────────────────────────────────────────
 # DB ユーティリティ
 # ──────────────────────────────────────────────────────────
@@ -189,13 +196,16 @@ elif page == "🗺️ 地図・一覧":
             if pd.isna(r["latitude"]):
                 continue
             color = RANK_COLOR.get(r["current_health_rank"], "#6c757d")
+            gmap = gmaps_url(r["latitude"], r["longitude"])
+            gmap_link = f'<a href="{gmap}" target="_blank">📍 Googleマップで開く</a>' if gmap else ""
             popup_html = f"""
             <b>{r['bridge_code']} {r['bridge_name']}</b><br>
+            所在地: {r['location_name'] or '-'}<br>
             路線: {r['route_name'] or '-'}<br>
-            架設: {r['built_year'] or '-'} 年<br>
-            橋長: {r['bridge_length'] or '-'} m<br>
+            架設: {r['built_year'] or '-'} 年　橋長: {r['bridge_length'] or '-'} m<br>
             ランク: {RANK_LABEL.get(r['current_health_rank'], r['current_health_rank'])}<br>
-            最終点検: {r['last_inspection_date'] or '未点検'}
+            最終点検: {r['last_inspection_date'] or '未点検'}<br>
+            {gmap_link}
             """
             folium.CircleMarker(
                 location=[r["latitude"], r["longitude"]],
@@ -226,15 +236,26 @@ elif page == "🗺️ 地図・一覧":
 
     st.divider()
     st.subheader(f"橋梁一覧（{len(df)}件）")
+
+    df_list = df.copy()
+    df_list["googleマップ"] = df_list.apply(
+        lambda r: gmaps_url(r["latitude"], r["longitude"]), axis=1
+    )
     display_cols = {
         "bridge_code": "管理番号", "bridge_name": "橋名", "route_name": "路線名",
         "location_name": "所在地", "built_year": "架設年",
         "bridge_length": "橋長(m)", "bridge_width": "幅員(m)",
         "superstructure_type": "上部工", "current_health_rank": "ランク",
-        "last_inspection_date": "最終点検日",
+        "last_inspection_date": "最終点検日", "googleマップ": "Googleマップ",
     }
     st.dataframe(
-        df[list(display_cols.keys())].rename(columns=display_cols),
+        df_list[list(display_cols.keys())].rename(columns=display_cols),
+        column_config={
+            "Googleマップ": st.column_config.LinkColumn(
+                "Googleマップ",
+                display_text="地図で開く",
+            ),
+        },
         hide_index=True,
         use_container_width=True,
     )
@@ -280,6 +301,10 @@ elif page == "🔍 橋梁詳細":
         col_a, col_b = st.columns(2)
         with col_a:
             st.markdown("**基本情報**")
+            loc_text = b["location_name"] or "-"
+            gmap = gmaps_url(b["latitude"], b["longitude"])
+            if gmap:
+                loc_text += f'　[📍 地図]({gmap})'
             st.table(pd.DataFrame({
                 "項目": ["路線名", "管理者", "所在地", "架設年", "上部工形式", "下部工形式"],
                 "内容": [
@@ -291,6 +316,13 @@ elif page == "🔍 橋梁詳細":
                     b["substructure_type"] or "-",
                 ],
             }))
+            if gmap:
+                st.markdown(
+                    f"📍 所在地: **{b['location_name'] or ''}**　"
+                    f"[Googleマップで開く]({gmap}){{target='_blank'}}",
+                    unsafe_allow_html=False,
+                )
+                st.link_button("🗺️ Googleマップで現地確認", gmap)
         with col_b:
             st.markdown("**諸元**")
             st.table(pd.DataFrame({
@@ -302,14 +334,21 @@ elif page == "🔍 橋梁詳細":
                     "-",
                 ],
             }))
+            if b["latitude"] and b["longitude"]:
+                st.markdown(f"**緯度**: {b['latitude']}　**経度**: {b['longitude']}")
         if b["latitude"] and b["longitude"]:
             m2 = folium.Map(location=[b["latitude"], b["longitude"]], zoom_start=16)
             folium.Marker(
                 [b["latitude"], b["longitude"]],
-                popup=b["bridge_name"],
-                icon=folium.Icon(color="red"),
+                popup=folium.Popup(
+                    f"<b>{b['bridge_name']}</b><br>{b['location_name'] or ''}<br>"
+                    f'<a href="{gmap}" target="_blank">Googleマップで開く</a>',
+                    max_width=200,
+                ),
+                tooltip=f"{b['bridge_name']}（クリックで詳細）",
+                icon=folium.Icon(color="red", icon="info-sign"),
             ).add_to(m2)
-            st_folium(m2, width=None, height=300, use_container_width=True)
+            st_folium(m2, width=None, height=320, use_container_width=True)
 
     with tab2:
         df_insp = query_df(
