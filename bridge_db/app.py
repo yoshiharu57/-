@@ -5,6 +5,7 @@
 
 import sqlite3
 import shutil
+import sys
 from pathlib import Path
 
 import folium
@@ -359,11 +360,27 @@ def gmaps_url(lat, lon) -> str | None:
 # ──────────────────────────────────────────────────────────
 # DB ユーティリティ
 # ──────────────────────────────────────────────────────────
+def _ensure_db():
+    """初回起動時にDBとサンプルデータを自動生成する（Replit等クラウド環境向け）"""
+    if DB_PATH.exists():
+        return
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    scripts_dir = Path(__file__).parent / "scripts"
+    sys.path.insert(0, str(scripts_dir))
+    import generate_dummy_data as _gdd  # noqa: PLC0415
+    con = _gdd.create_database()
+    _gdd.insert_dummy_data(con)
+    con.close()
+    # ストレージフォルダも作成
+    import init_storage as _is  # noqa: PLC0415
+    _is.init_storage()
+
+
+_ensure_db()
+
+
 @st.cache_resource
 def get_connection():
-    if not DB_PATH.exists():
-        st.error("データベースが見つかりません。先に `python scripts/generate_dummy_data.py` を実行してください。")
-        st.stop()
     con = sqlite3.connect(DB_PATH, check_same_thread=False)
     con.row_factory = sqlite3.Row
     return con
