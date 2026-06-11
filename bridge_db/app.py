@@ -18,8 +18,9 @@ STORAGE_ROOT = Path(__file__).parent / "storage" / "bridges"
 
 PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".webp"}
 DOC_EXTS   = {".pdf", ".xlsx", ".xls", ".docx", ".doc", ".csv"}
-PHOTO_TYPES_LIST = ["全景", "損傷", "補修後", "その他"]
-DOC_TYPES_LIST   = ["点検調書", "損傷図", "補修設計書", "その他"]
+PHOTO_TYPES_LIST  = ["全景", "損傷", "補修後", "その他"]
+DOC_TYPES_LIST    = ["点検調書", "損傷図", "補修設計書", "その他"]
+ACCESS_METHOD_LIST = ["橋梁点検車", "リフト車（高所作業車）", "梯子", "目視のみ", "渡り板", "その他"]
 
 # ──────────────────────────────────────────────────────────
 # ページ設定
@@ -95,35 +96,48 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 }
 .page-header p { margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.75; color: white; }
 
-/* ── カード ─────────────────────────────────────── */
+/* ── カード（POP デザイン）──────────────────────── */
 .metric-card {
     background: white;
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    border-left: 5px solid #2563eb;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-radius: 18px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.10);
     height: 100%;
+    position: relative; overflow: hidden;
+    transition: transform 0.15s;
+}
+.metric-card:hover { transform: translateY(-2px); }
+.metric-card::after {
+    content: ''; position: absolute;
+    bottom: -20px; right: -20px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.08;
+    background: var(--mc-color, #2563eb);
+}
+.metric-card .mc-icon {
+    font-size: 2rem; margin-bottom: 0.4rem; display: block;
 }
 .metric-card .mc-label {
-    font-size: 0.75rem; font-weight: 500;
-    color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
+    font-size: 0.82rem; font-weight: 600;
+    color: #64748b; letter-spacing: 0.04em;
     margin-bottom: 0.3rem;
 }
 .metric-card .mc-value {
-    font-size: 2rem; font-weight: 700; color: #1e293b; line-height: 1.1;
+    font-size: 2.8rem; font-weight: 800; line-height: 1.0;
 }
 .metric-card .mc-sub {
-    font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem;
+    font-size: 0.82rem; color: #94a3b8; margin-top: 0.3rem;
 }
 
 /* ── セクションヘッダー ─────────────────────────── */
 .section-header {
-    display: flex; align-items: center; gap: 0.5rem;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 0.5rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    border-bottom: 3px solid #e2e8f0;
+    padding-bottom: 0.6rem; margin-bottom: 1.2rem; margin-top: 0.8rem;
 }
 .section-header span {
-    font-size: 1rem; font-weight: 700; color: #1e293b;
+    font-size: 1.15rem; font-weight: 800; color: #1e293b; letter-spacing: 0.01em;
 }
 
 /* ── ランクバッジ ────────────────────────────────── */
@@ -184,12 +198,19 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 .alert-card .ac-name { font-weight:700; color:#1e293b; font-size:0.95rem; }
 .alert-card .ac-sub  { font-size:0.78rem; color:#64748b; margin-top:0.1rem; }
 
-/* ── テーブル微調整 ─────────────────────────────── */
+/* ── テーブル（見やすく大きく）──────────────────── */
 [data-testid="stDataFrame"] th {
-    background: #f1f5f9 !important; color: #475569 !important;
-    font-size: 0.8rem !important; font-weight: 600 !important;
+    background: #1e3a5f !important; color: #e2e8f0 !important;
+    font-size: 0.92rem !important; font-weight: 700 !important;
+    padding: 0.7rem 0.9rem !important;
 }
-[data-testid="stDataFrame"] td { font-size: 0.85rem !important; }
+[data-testid="stDataFrame"] td {
+    font-size: 0.95rem !important;
+    padding: 0.6rem 0.9rem !important;
+}
+[data-testid="stDataFrame"] tr:nth-child(even) td {
+    background: #f8fafc !important;
+}
 
 /* ── ボタン ─────────────────────────────────────── */
 .stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"] {
@@ -342,11 +363,12 @@ def rank_badge(rank: str) -> str:
     return f'<span class="rank-badge rank-{rank}">{label}</span>'
 
 
-def metric_card(label: str, value: str, sub: str = "", color: str = "#2563eb") -> str:
+def metric_card(label: str, value: str, sub: str = "", color: str = "#2563eb", icon: str = "🌉") -> str:
     return f"""
-<div class="metric-card" style="border-left-color:{color}">
-  <div class="mc-label">{label}</div>
+<div class="metric-card" style="--mc-color:{color}; border-top: 5px solid {color}">
+  <div class="mc-icon">{icon}</div>
   <div class="mc-value" style="color:{color}">{value}</div>
+  <div class="mc-label">{label}</div>
   <div class="mc-sub">{sub}</div>
 </div>"""
 
@@ -377,6 +399,14 @@ def _ensure_db():
 
 
 _ensure_db()
+
+# DB マイグレーション: access_method 列がなければ追加
+with sqlite3.connect(DB_PATH) as _mc:
+    try:
+        _mc.execute("ALTER TABLE inspections ADD COLUMN access_method TEXT")
+        _mc.commit()
+    except sqlite3.OperationalError:
+        pass
 
 
 @st.cache_resource
@@ -572,7 +602,7 @@ st.sidebar.markdown("""
 # 1. ダッシュボード
 # ──────────────────────────────────────────────────────────
 if page == "📊 ダッシュボード":
-    page_header("📊 橋梁管理 ダッシュボード", "管理橋梁の健全性状況と点検記録の概要")
+    page_header("📊 橋梁管理 ダッシュボード", "管理橋梁の健全性状況・点検状況の一覧")
 
     df_summary = query_df(
         "SELECT current_health_rank, COUNT(*) as cnt FROM bridges WHERE is_active=1 "
@@ -581,31 +611,31 @@ if page == "📊 ダッシュボード":
     rank_counts = dict(zip(df_summary["current_health_rank"], df_summary["cnt"]))
     total = sum(rank_counts.values())
 
-    # ── メトリクスカード ──────────────────────────────────
+    # ── メトリクスカード（POP）────────────────────────────
     cols = st.columns(5)
     cards = [
-        ("管理橋梁数（総計）", f"{total}", "is_active = 1", "#2563eb"),
-        ("I : 健全",           f"{rank_counts.get('I', 0)}",   "定期点検・措置不要", RANK_COLOR["I"]),
-        ("II : 予防保全段階",   f"{rank_counts.get('II', 0)}",  "監視・予防保全措置", RANK_COLOR["II"]),
-        ("III : 早期措置段階",  f"{rank_counts.get('III', 0)}", "早期補修が必要",     RANK_COLOR["III"]),
-        ("IV : 緊急措置段階",   f"{rank_counts.get('IV', 0)}",  "緊急補修・通行規制", RANK_COLOR["IV"]),
+        ("管理橋梁数（総計）", f"{total}",                      "全管理橋梁",   "#2563eb", "🌉"),
+        ("I : 健全",           f"{rank_counts.get('I', 0)}",    "措置不要",     RANK_COLOR["I"],   "🟢"),
+        ("II : 予防保全",      f"{rank_counts.get('II', 0)}",   "監視・保全措置", RANK_COLOR["II"],  "🟡"),
+        ("III : 早期措置",     f"{rank_counts.get('III', 0)}",  "早期補修必要", RANK_COLOR["III"], "🟠"),
+        ("IV : 緊急措置",      f"{rank_counts.get('IV', 0)}",   "緊急補修・規制検討", RANK_COLOR["IV"],  "🔴"),
     ]
-    for col, (label, val, sub, color) in zip(cols, cards):
+    for col, (label, val, sub, color, icon) in zip(cols, cards):
         with col:
-            st.markdown(metric_card(label, val + " 橋", sub, color), unsafe_allow_html=True)
+            st.markdown(metric_card(label, val + " 橋", sub, color, icon), unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     col_l, col_r = st.columns([1, 2])
 
     with col_l:
-        section_header("📈", "健全性ランク分布")
+        section_header("📊", "健全性ランク分布")
         chart_df = (
             df_summary
             .rename(columns={"current_health_rank": "ランク", "cnt": "橋梁数"})
             .set_index("ランク")
         )
-        st.bar_chart(chart_df, color="#2563eb", height=260)
+        st.bar_chart(chart_df, color="#2563eb", height=240)
 
     with col_r:
         section_header("⚠️", "緊急・早期措置が必要な橋梁")
@@ -638,20 +668,59 @@ if page == "📊 ダッシュボード":
 """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    section_header("📋", "直近の点検記録（最新10件）")
-    df_recent = query_df(
-        """SELECT b.bridge_code, b.bridge_name, i.inspection_date,
-                  i.health_rank, i.countermeasure_type, i.inspector_name
-           FROM inspections i JOIN bridges b ON i.bridge_id = b.bridge_id
-           ORDER BY i.inspection_date DESC LIMIT 10"""
+
+    # ── 橋梁一覧テーブル ──────────────────────────────────
+    section_header("🌉", "橋梁一覧")
+
+    RANK_DISPLAY = {
+        "I":   "🟢 I  健全",
+        "II":  "🟡 II 予防保全",
+        "III": "🟠 III 早期措置",
+        "IV":  "🔴 IV 緊急措置",
+    }
+
+    df_list = query_df(
+        """SELECT
+               b.bridge_code     AS 管理番号,
+               b.bridge_name     AS 橋梁名,
+               r.route_name      AS 路線名,
+               b.location_name   AS 場所,
+               CASE WHEN b.latitude IS NOT NULL AND b.longitude IS NOT NULL
+                    THEN 'https://www.google.com/maps?q=' || b.latitude || ',' || b.longitude || '&z=17'
+                    ELSE NULL END AS GoogleMAP,
+               SUBSTR(i.inspection_date, 1, 4) AS 前回点検年,
+               COALESCE(i.access_method, '未記録') AS 点検足場,
+               b.current_health_rank AS _rank
+           FROM bridges b
+           LEFT JOIN routes r ON b.route_id = r.route_id
+           LEFT JOIN inspections i ON i.inspection_id = (
+               SELECT inspection_id FROM inspections
+               WHERE bridge_id = b.bridge_id
+               ORDER BY inspection_date DESC LIMIT 1
+           )
+           WHERE b.is_active = 1
+           ORDER BY b.bridge_code"""
     )
+    df_list["健全度"] = df_list["_rank"].map(RANK_DISPLAY).fillna(df_list["_rank"])
+    df_list = df_list.drop(columns=["_rank"])
+
     st.dataframe(
-        df_recent.rename(columns={
-            "bridge_code": "管理番号", "bridge_name": "橋名",
-            "inspection_date": "点検日", "health_rank": "ランク",
-            "countermeasure_type": "措置", "inspector_name": "点検者",
-        }),
-        hide_index=True, use_container_width=True,
+        df_list,
+        hide_index=True,
+        use_container_width=True,
+        height=420,
+        column_config={
+            "GoogleMAP": st.column_config.LinkColumn(
+                "📍 GoogleMAP", display_text="地図を開く"
+            ),
+            "管理番号":  st.column_config.TextColumn("管理番号",  width="small"),
+            "橋梁名":    st.column_config.TextColumn("橋梁名",    width="medium"),
+            "路線名":    st.column_config.TextColumn("路線名",    width="medium"),
+            "場所":      st.column_config.TextColumn("場所",      width="medium"),
+            "前回点検年": st.column_config.TextColumn("前回点検年", width="small"),
+            "点検足場":  st.column_config.TextColumn("点検足場",  width="medium"),
+            "健全度":    st.column_config.TextColumn("健全度",    width="medium"),
+        },
     )
 
 
@@ -941,6 +1010,7 @@ elif page == "📋 点検記録入力":
                                           format_func=lambda x: RANK_LABEL[x])
             countermeasure = st.selectbox("措置区分", ["A", "B", "C", "D", "E"],
                                           format_func=lambda x: COUNTERMEASURE_LABEL[x])
+            access_method  = st.selectbox("点検足場", ACCESS_METHOD_LIST)
         with col2:
             inspector_name = st.text_input("点検者氏名")
             inspector_org  = st.text_input("点検機関名")
@@ -964,11 +1034,12 @@ elif page == "📋 点検記録入力":
                    (bridge_id, inspection_date, inspection_type, inspector_name,
                     inspector_org, health_rank, overall_judgment,
                     damage_superstructure, damage_substructure,
-                    countermeasure_type, next_inspection_year, estimated_cost)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    countermeasure_type, next_inspection_year, estimated_cost,
+                    access_method)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (bridge_id, str(insp_date), insp_type, inspector_name,
                  inspector_org, health_rank, overall, dmg_super, dmg_sub,
-                 countermeasure, next_year, est_cost),
+                 countermeasure, next_year, est_cost, access_method),
             )
             con.execute(
                 "UPDATE bridges SET current_health_rank=?, updated_at=datetime('now','localtime') WHERE bridge_id=?",

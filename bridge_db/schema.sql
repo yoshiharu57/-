@@ -83,6 +83,9 @@ CREATE TABLE IF NOT EXISTS inspections (
     -- 費用（概算）
     estimated_cost      INTEGER,                -- 補修概算費用（千円）
 
+    -- 点検足場
+    access_method       TEXT,                   -- 点検足場（橋梁点検車/リフト車/梯子/目視のみ/渡り板/その他）
+
     created_at          TEXT DEFAULT (datetime('now', 'localtime'))
 );
 

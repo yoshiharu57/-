@@ -34,31 +34,31 @@ BRIDGES = [
 ]
 
 INSPECTIONS = [
-    # bridge_idx, date, type, inspector, org, rank, countermeasure, overall_judgment
+    # bridge_idx, date, type, inspector, org, rank, countermeasure, overall_judgment, access_method
     (0, "2021-10-15", "定期", "田中 一郎", "○○建設コンサルタント", "II", "C",
-     "主桁にひびわれ・漏水が確認された。予防保全措置が必要。"),
+     "主桁にひびわれ・漏水が確認された。予防保全措置が必要。", "橋梁点検車"),
     (0, "2016-06-20", "定期", "鈴木 次郎", "○○建設コンサルタント", "II", "B",
-     "軽微なひびわれを確認。経過観察とする。"),
+     "軽微なひびわれを確認。経過観察とする。", "梯子"),
     (1, "2023-05-10", "定期", "田中 一郎", "○○建設コンサルタント", "I",  "A",
-     "損傷は認められず、健全な状態。"),
+     "損傷は認められず、健全な状態。", "目視のみ"),
     (2, "2022-09-01", "定期", "佐藤 三郎", "△△技術事務所",       "II", "B",
-     "塗装劣化が進行中。次回点検時に要確認。"),
+     "塗装劣化が進行中。次回点検時に要確認。", "橋梁点検車"),
     (3, "2020-11-25", "定期", "田中 一郎", "○○建設コンサルタント", "III","D",
-     "床版の断面欠損・鉄筋露出あり。早期補修が必要。"),
+     "床版の断面欠損・鉄筋露出あり。早期補修が必要。", "リフト車（高所作業車）"),
     (3, "2015-08-10", "定期", "鈴木 次郎", "○○建設コンサルタント", "II", "C",
-     "床版にひびわれ・剥離を確認。"),
+     "床版にひびわれ・剥離を確認。", "梯子"),
     (4, "2023-07-20", "定期", "佐藤 三郎", "△△技術事務所",       "I",  "A",
-     "全体的に良好な状態を維持している。"),
+     "全体的に良好な状態を維持している。", "橋梁点検車"),
     (5, "2019-04-15", "定期", "田中 一郎", "○○建設コンサルタント", "III","D",
-     "支承の機能障害、桁端部の腐食を確認。早期措置が必要。"),
+     "支承の機能障害、桁端部の腐食を確認。早期措置が必要。", "リフト車（高所作業車）"),
     (6, "2022-03-08", "定期", "高橋 四郎", "□□エンジニアリング",  "II", "B",
-     "石積み部に軽微なひびわれあり。歴史的構造物として慎重な対応が必要。"),
+     "石積み部に軽微なひびわれあり。歴史的構造物として慎重な対応が必要。", "渡り板"),
     (7, "2023-10-30", "定期", "佐藤 三郎", "△△技術事務所",       "I",  "A",
-     "竣工後18年経過も損傷なし。良好な状態。"),
+     "竣工後18年経過も損傷なし。良好な状態。", "目視のみ"),
     (8, "2018-06-01", "定期", "田中 一郎", "○○建設コンサルタント", "IV", "E",
-     "床版貫通ひびわれ・鉄筋破断を確認。緊急措置が必要。通行規制を推奨。"),
+     "床版貫通ひびわれ・鉄筋破断を確認。緊急措置が必要。通行規制を推奨。", "リフト車（高所作業車）"),
     (9, "2023-08-22", "定期", "高橋 四郎", "□□エンジニアリング",  "I",  "A",
-     "新設橋梁につき健全。"),
+     "新設橋梁につき健全。", "目視のみ"),
 ]
 
 REPAIRS = [
@@ -112,7 +112,7 @@ def insert_dummy_data(con: sqlite3.Connection):
     # 点検履歴
     inspection_ids = []
     for insp in INSPECTIONS:
-        (bidx, date, itype, inspector, org, rank, cmeasure, judgment) = insp
+        (bidx, date, itype, inspector, org, rank, cmeasure, judgment, access) = insp
         bid = bridge_ids[bidx]
         # 損傷テキストは健全性ランクに応じて設定
         dmg_super = {
@@ -132,10 +132,10 @@ def insert_dummy_data(con: sqlite3.Connection):
             """INSERT INTO inspections
                (bridge_id, inspection_date, inspection_type, inspector_name, inspector_org,
                 health_rank, overall_judgment, damage_superstructure,
-                countermeasure_type, next_inspection_year, estimated_cost)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                countermeasure_type, next_inspection_year, estimated_cost, access_method)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
             (bid, date, itype, inspector, org, rank, judgment,
-             dmg_super, cmeasure, next_year, est_cost),
+             dmg_super, cmeasure, next_year, est_cost, access),
         )
         inspection_ids.append(cur.lastrowid)
     con.commit()
