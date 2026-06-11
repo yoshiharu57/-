@@ -580,9 +580,9 @@ def _insp_id_from_label(bridge_id: int, label: str):
         return None
 
 
-def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Path):
+def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Path, drawings_dir: Path):
     con = get_connection()
-    st.caption(f"📂 `storage/bridges/{bridge_code}/`　（photos/ と forms/ に直接置くことも可能）")
+    st.caption(f"📂 `storage/bridges/{bridge_code}/`　（photos/ / forms/ / drawings/ に直接置くことも可能）")
 
     sec_photo, sec_form = st.columns(2)
 
@@ -669,7 +669,8 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
 
         db_docs = query_df(
             "SELECT doc_id, doc_path, file_name, doc_type, file_size, description, uploaded_at "
-            "FROM documents WHERE bridge_id=? ORDER BY uploaded_at DESC", (bridge_id,))
+            "FROM documents WHERE bridge_id=? AND doc_path LIKE ? ORDER BY uploaded_at DESC",
+            (bridge_id, f"bridges/{bridge_code}/forms/%"))
         disk_docs = [p for p in sorted(forms_dir.glob("*")) if p.suffix.lower() in DOC_EXTS]
 
         if not db_docs.empty:
@@ -699,6 +700,70 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
                 c2.download_button("⬇ DL", p.read_bytes(), file_name=p.name, key=f"ddisk_{p.name}")
         else:
             st.info("帳票・調査様式はまだ登録されていません。")
+
+    # ── 一般図・図面 ─────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    section_header("📐", "一般図・図面")
+    drawings_dir.mkdir(parents=True, exist_ok=True)
+    DRAW_TYPES = ["一般図", "平面図", "側面図", "断面図", "構造図", "その他"]
+    with st.expander("＋ 図面ファイルを追加"):
+        up_draw = st.file_uploader(
+            "図面ファイル（PDF/DWG/画像）",
+            type=["pdf", "jpg", "jpeg", "png", "xlsx", "xls", "docx"],
+            accept_multiple_files=True,
+            key=f"up_draw_{bridge_id}",
+        )
+        dr_type = st.selectbox("図面種別", DRAW_TYPES, key=f"drt_{bridge_id}")
+        dr_desc = st.text_input("説明（任意）", key=f"drd_{bridge_id}")
+        if st.button("図面を保存", key=f"drbtn_{bridge_id}", type="primary") and up_draw:
+            for uf in up_draw:
+                safe_name = _safe_filename(uf.name)
+                data = uf.getvalue()
+                (drawings_dir / safe_name).write_bytes(data)
+                rel_path = f"bridges/{bridge_code}/drawings/{safe_name}"
+                con.execute(
+                    "INSERT INTO documents (bridge_id, inspection_id, doc_path, "
+                    "file_name, doc_type, file_size, description, uploaded_at) "
+                    "VALUES (?,?,?,?,?,?,?,datetime('now','localtime'))",
+                    (bridge_id, None, rel_path, safe_name, dr_type, len(data), dr_desc or None),
+                )
+            con.commit()
+            st.success(f"{len(up_draw)}件の図面を保存しました")
+            st.rerun()
+
+    db_draws = query_df(
+        "SELECT doc_id, doc_path, file_name, doc_type, file_size, description, uploaded_at "
+        "FROM documents WHERE bridge_id=? AND doc_path LIKE ? ORDER BY uploaded_at DESC",
+        (bridge_id, f"bridges/{bridge_code}/drawings/%"))
+    disk_draws = [p for p in sorted(drawings_dir.glob("*")) if p.suffix.lower() in DOC_EXTS | {".jpg",".jpeg",".png"}]
+
+    if not db_draws.empty:
+        st.caption(f"登録済み: {len(db_draws)}件")
+        for _, row in db_draws.iterrows():
+            f_path = drawings_dir / row["file_name"]
+            icon = FILE_ICONS.get(Path(row["file_name"]).suffix.lower(), "📐")
+            size_kb = f"{row['file_size'] // 1024} KB" if row["file_size"] else "-"
+            c1, c2 = st.columns([4, 1])
+            with c1:
+                st.markdown(f"{icon} **{row['file_name']}**　`{row['doc_type'] or '-'}`　{size_kb}　_{row['uploaded_at'] or ''}_")
+                if row["description"]:
+                    st.caption(row["description"])
+            with c2:
+                if f_path.exists():
+                    st.download_button("⬇ DL", f_path.read_bytes(),
+                        file_name=row["file_name"], key=f"ddraw_{row['doc_id']}")
+                else:
+                    st.caption("⚠なし")
+            st.divider()
+    elif disk_draws:
+        st.caption(f"フォルダ内: {len(disk_draws)}件（DB未登録）")
+        for p in disk_draws:
+            icon = FILE_ICONS.get(p.suffix.lower(), "📐")
+            c1, c2 = st.columns([4, 1])
+            c1.markdown(f"{icon} {p.name}")
+            c2.download_button("⬇ DL", p.read_bytes(), file_name=p.name, key=f"ddrawdisk_{p.name}")
+    else:
+        st.info("一般図・図面はまだ登録されていません。")
 
 
 # ──────────────────────────────────────────────────────────
@@ -998,11 +1063,13 @@ elif page == "🔍 橋梁詳細":
 </div>
 """, unsafe_allow_html=True)
 
-    bridge_code = b["bridge_code"]
-    photos_dir  = STORAGE_ROOT / bridge_code / "photos"
-    forms_dir   = STORAGE_ROOT / bridge_code / "forms"
+    bridge_code  = b["bridge_code"]
+    photos_dir   = STORAGE_ROOT / bridge_code / "photos"
+    forms_dir    = STORAGE_ROOT / bridge_code / "forms"
+    drawings_dir = STORAGE_ROOT / bridge_code / "drawings"
     photos_dir.mkdir(parents=True, exist_ok=True)
     forms_dir.mkdir(parents=True, exist_ok=True)
+    drawings_dir.mkdir(parents=True, exist_ok=True)
 
     tab1, tab2, tab3, tab4 = st.tabs(["📋 基本情報", "🔬 点検履歴", "🔧 補修履歴", "📁 ファイル管理"])
 
@@ -1114,7 +1181,7 @@ elif page == "🔍 橋梁詳細":
             )
 
     with tab4:
-        _tab_files(bridge_id, bridge_code, photos_dir, forms_dir)
+        _tab_files(bridge_id, bridge_code, photos_dir, forms_dir, drawings_dir)
 
 
 # ──────────────────────────────────────────────────────────
@@ -1177,11 +1244,74 @@ elif page == "📋 点検記録入力":
                 "UPDATE bridges SET current_health_rank=?, updated_at=datetime('now','localtime') WHERE bridge_id=?",
                 (health_rank, bridge_id),
             )
+            new_insp_id = con.execute("SELECT last_insert_rowid()").fetchone()[0]
+            con.execute(
+                "UPDATE bridges SET current_health_rank=?, updated_at=datetime('now','localtime') WHERE bridge_id=?",
+                (health_rank, bridge_id),
+            )
             con.commit()
+            st.session_state["last_insp_id"]        = new_insp_id
+            st.session_state["last_insp_bridge_id"] = bridge_id
             st.success(f"✅ 点検記録を登録しました（{selected} / {insp_date}）")
             st.cache_resource.clear()
         except Exception as e:
             st.error(f"登録に失敗しました: {e}")
+
+    # ── 点検調書アップロード（登録直後に表示）─────────────
+    if (st.session_state.get("last_insp_bridge_id") == bridge_id
+            and "last_insp_id" in st.session_state):
+        insp_id       = st.session_state["last_insp_id"]
+        b_code_row    = query_df("SELECT bridge_code FROM bridges WHERE bridge_id=?", (bridge_id,))
+        b_code        = b_code_row["bridge_code"].values[0] if not b_code_row.empty else "unknown"
+        f_dir         = STORAGE_ROOT / b_code / "forms"
+        f_dir.mkdir(parents=True, exist_ok=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        section_header("📄", "点検調書のアップロード")
+        st.caption(f"登録した点検記録（ID: {insp_id}）に点検調書ファイルを添付します")
+
+        FILE_ICONS_INP = {".pdf":"📕",".xlsx":"📗",".xls":"📗",".docx":"📘",".doc":"📘"}
+        up_chosho = st.file_uploader(
+            "点検調書・添付ファイル（PDF / Excel / Word）",
+            type=["pdf","xlsx","xls","docx","doc"],
+            accept_multiple_files=True,
+            key=f"chosho_{insp_id}",
+        )
+        chosho_desc = st.text_input("説明（任意）", key=f"chosho_desc_{insp_id}")
+
+        if st.button("📤 点検調書を保存", key=f"chosho_save_{insp_id}", type="primary") and up_chosho:
+            saved = 0
+            for uf in up_chosho:
+                safe_name = _safe_filename(uf.name)
+                data = uf.getvalue()
+                (f_dir / safe_name).write_bytes(data)
+                rel_path = f"bridges/{b_code}/forms/{safe_name}"
+                con.execute(
+                    "INSERT INTO documents (bridge_id, inspection_id, doc_path, "
+                    "file_name, doc_type, file_size, description, uploaded_at) "
+                    "VALUES (?,?,?,?,?,?,?,datetime('now','localtime'))",
+                    (bridge_id, insp_id, rel_path, safe_name,
+                     "点検調書", len(data), chosho_desc or None),
+                )
+                saved += 1
+            con.commit()
+            st.success(f"✅ {saved}件の点検調書を保存しました")
+
+        # 登録済み調書一覧
+        db_chosho = query_df(
+            "SELECT doc_id, file_name, doc_type, file_size, uploaded_at "
+            "FROM documents WHERE inspection_id=? ORDER BY uploaded_at DESC", (insp_id,))
+        if not db_chosho.empty:
+            st.caption(f"この点検に添付済み: {len(db_chosho)}件")
+            for _, row in db_chosho.iterrows():
+                icon = FILE_ICONS_INP.get(Path(row["file_name"]).suffix.lower(), "📎")
+                size_kb = f"{row['file_size'] // 1024} KB" if row["file_size"] else "-"
+                fp = f_dir / row["file_name"]
+                c1, c2 = st.columns([4, 1])
+                c1.markdown(f"{icon} **{row['file_name']}**　{size_kb}　_{row['uploaded_at'] or ''}_")
+                if fp.exists():
+                    c2.download_button("⬇ DL", fp.read_bytes(),
+                        file_name=row["file_name"], key=f"dl_chosho_{row['doc_id']}")
 
 
 # ──────────────────────────────────────────────────────────
