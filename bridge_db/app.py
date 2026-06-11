@@ -238,6 +238,79 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 [data-testid="stAlert"] {
     border-radius: 10px !important;
 }
+
+/* ══════════════════════════════════════════════════
+   タブレット・スマートフォン対応 (iPad 含む)
+   ══════════════════════════════════════════════════ */
+
+/* iPad縦向き以下 (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-top: 1.2rem !important;
+        max-width: 100% !important;
+    }
+    .page-header h1 { font-size: 1.3rem !important; }
+    .page-header p  { font-size: 0.8rem !important; }
+
+    /* メトリクスカード: 横並び → スクロール */
+    .metric-card { padding: 0.8rem 1rem; }
+    .metric-card .mc-value { font-size: 1.6rem; }
+    .metric-card .mc-label { font-size: 0.7rem; }
+
+    /* テーブルを横スクロール可能に */
+    [data-testid="stDataFrame"] {
+        overflow-x: auto !important;
+    }
+}
+
+/* iPad縦向き以下 (max-width: 768px) */
+@media (max-width: 768px) {
+    /* ページヘッダー */
+    .page-header {
+        padding: 1rem 1.2rem;
+        border-radius: 8px;
+    }
+    .page-header h1 { font-size: 1.1rem !important; }
+
+    /* 橋梁ヒーロー */
+    .bridge-hero { padding: 0.8rem 1rem; gap: 0.6rem; }
+    .bridge-hero .bh-name { font-size: 1.2rem; }
+
+    /* アラートカード */
+    .alert-card { flex-wrap: wrap; }
+
+    /* 点検カード */
+    .insp-card { padding: 0.8rem 1rem; }
+
+    /* フォームの余白調整 */
+    .stForm { padding: 1rem; }
+
+    /* セクションヘッダーのフォント */
+    .section-header span { font-size: 0.92rem; }
+
+    /* ボタンを大きめに（タッチ操作しやすく） */
+    .stButton > button, .stFormSubmitButton > button,
+    .stLinkButton a, .stDownloadButton > button {
+        min-height: 2.6rem !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* 数値入力の +/- ボタンを大きく */
+    [data-testid="stNumberInput"] button {
+        min-width: 2.2rem !important;
+        min-height: 2.2rem !important;
+    }
+}
+
+/* スマートフォン (max-width: 480px) */
+@media (max-width: 480px) {
+    .page-header h1 { font-size: 1rem !important; }
+    .mc-value { font-size: 1.4rem !important; }
+    .bridge-hero .bh-name { font-size: 1rem; }
+    .rank-badge { font-size: 0.72rem; padding: 2px 8px; }
+}
 </style>
 """, unsafe_allow_html=True)
 
