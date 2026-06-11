@@ -765,35 +765,25 @@ if page == "📊 ダッシュボード":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    col_l, col_r = st.columns([1, 2])
-
-    with col_l:
-        section_header("📊", "健全性ランク分布")
-        chart_df = (
-            df_summary
-            .rename(columns={"current_health_rank": "ランク", "cnt": "橋梁数"})
-            .set_index("ランク")
-        )
-        st.bar_chart(chart_df, color="#2563eb", height=240)
-
-    with col_r:
-        section_header("⚠️", "緊急・早期措置が必要な橋梁")
-        df_urgent = query_df(
-            """SELECT bridge_code, bridge_name, route_name,
-                      current_health_rank, last_inspection_date, last_countermeasure
-               FROM v_bridges_latest
-               WHERE current_health_rank IN ('III','IV')
-               ORDER BY current_health_rank DESC"""
-        )
-        if df_urgent.empty:
-            st.success("現在、緊急・早期措置が必要な橋梁はありません。")
-        else:
-            for _, r in df_urgent.iterrows():
-                is_iv = r["current_health_rank"] == "IV"
-                cls   = "" if is_iv else "warn"
-                icon  = "🚨" if is_iv else "⚠️"
-                cm    = COUNTERMEASURE_LABEL.get(r["last_countermeasure"], r["last_countermeasure"] or "-")
-                date  = r["last_inspection_date"] or "未点検"
+    section_header("⚠️", "緊急・早期措置が必要な橋梁")
+    df_urgent = query_df(
+        """SELECT bridge_code, bridge_name, route_name,
+                  current_health_rank, last_inspection_date, last_countermeasure
+           FROM v_bridges_latest
+           WHERE current_health_rank IN ('III','IV')
+           ORDER BY current_health_rank DESC"""
+    )
+    if df_urgent.empty:
+        st.success("現在、緊急・早期措置が必要な橋梁はありません。")
+    else:
+        cols_alert = st.columns(2)
+        for i, (_, r) in enumerate(df_urgent.iterrows()):
+            is_iv = r["current_health_rank"] == "IV"
+            cls   = "" if is_iv else "warn"
+            icon  = "🚨" if is_iv else "⚠️"
+            cm    = COUNTERMEASURE_LABEL.get(r["last_countermeasure"], r["last_countermeasure"] or "-")
+            date  = r["last_inspection_date"] or "未点検"
+            with cols_alert[i % 2]:
                 st.markdown(f"""
 <div class="alert-card {cls}">
   <div class="ac-icon">{icon}</div>
