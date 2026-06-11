@@ -5,6 +5,7 @@
 
 import sqlite3
 import shutil
+import sys
 from pathlib import Path
 
 import folium
@@ -17,8 +18,9 @@ STORAGE_ROOT = Path(__file__).parent / "storage" / "bridges"
 
 PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".webp"}
 DOC_EXTS   = {".pdf", ".xlsx", ".xls", ".docx", ".doc", ".csv"}
-PHOTO_TYPES_LIST = ["全景", "損傷", "補修後", "その他"]
-DOC_TYPES_LIST   = ["点検調書", "損傷図", "補修設計書", "その他"]
+PHOTO_TYPES_LIST  = ["全景", "損傷", "補修後", "その他"]
+DOC_TYPES_LIST    = ["点検調書", "損傷図", "補修設計書", "その他"]
+ACCESS_METHOD_LIST = ["橋梁点検車", "リフト車（高所作業車）", "梯子", "目視のみ", "渡り板", "その他"]
 
 # ──────────────────────────────────────────────────────────
 # ページ設定
@@ -73,9 +75,33 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 /* ── サイドバー ─────────────────────────────────── */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #1e3a5f 0%, #14304f 100%);
+    min-width: 240px !important;
 }
 [data-testid="stSidebar"] * { color: #e2e8f0 !important; }
-[data-testid="stSidebar"] .stRadio label { color: #cbd5e1 !important; }
+
+/* メニュー項目を大きく・余白を広く */
+[data-testid="stSidebar"] .stRadio > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.2rem !important;
+}
+[data-testid="stSidebar"] .stRadio label {
+    padding: 0.7rem 1rem !important;
+    border-radius: 10px !important;
+    transition: background 0.15s !important;
+    cursor: pointer !important;
+}
+[data-testid="stSidebar"] .stRadio label:hover {
+    background: rgba(255,255,255,0.12) !important;
+}
+[data-testid="stSidebar"] .stRadio label p {
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    color: #e2e8f0 !important;
+    letter-spacing: 0.01em !important;
+    line-height: 1.4 !important;
+}
+
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
     color: #94a3b8 !important; font-size: 0.78rem;
 }
@@ -94,35 +120,101 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 }
 .page-header p { margin: 0.3rem 0 0; font-size: 0.85rem; opacity: 0.75; color: white; }
 
-/* ── カード ─────────────────────────────────────── */
+/* ── カード（全面カラー）────────────────────────── */
 .metric-card {
-    background: white;
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    border-left: 5px solid #2563eb;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 1.2rem 1.4rem;
+    display: flex; align-items: center; gap: 1rem;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    transition: transform 0.12s, box-shadow 0.12s;
     height: 100%;
+    min-height: 100px;
+}
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.20);
+}
+.metric-card .mc-icon-wrap {
+    background: rgba(255,255,255,0.22);
+    border-radius: 12px;
+    width: 54px; height: 54px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.9rem;
+}
+.metric-card .mc-body { flex: 1; min-width: 0; }
+.metric-card .mc-value {
+    font-size: 2.5rem; font-weight: 900; line-height: 1.0;
+    color: white;
 }
 .metric-card .mc-label {
-    font-size: 0.75rem; font-weight: 500;
-    color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
-    margin-bottom: 0.3rem;
-}
-.metric-card .mc-value {
-    font-size: 2rem; font-weight: 700; color: #1e293b; line-height: 1.1;
+    font-size: 0.82rem; font-weight: 600;
+    color: rgba(255,255,255,0.88); margin-top: 0.25rem;
 }
 .metric-card .mc-sub {
-    font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem;
+    font-size: 0.75rem; color: rgba(255,255,255,0.65);
+}
+
+/* ── 橋梁一覧テーブル ───────────────────────────── */
+.bridge-table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    margin-bottom: 0.8rem;
+}
+.bridge-list-table {
+    width: 100%; border-collapse: collapse;
+    background: white; font-size: 0.92rem;
+}
+.bridge-list-table thead tr {
+    background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 100%);
+}
+.bridge-list-table th {
+    color: white; padding: 0.85rem 0.9rem;
+    font-weight: 700; font-size: 0.86rem;
+    white-space: nowrap; text-align: left;
+}
+.bridge-list-table td {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap; color: #334155;
+}
+.bridge-list-table tbody tr:hover { background: #eff6ff; }
+.bridge-list-table .bridge-code {
+    color: #dc2626; font-weight: 700; font-size: 0.9rem;
+}
+.map-link {
+    display: inline-block;
+    background: #eff6ff; border: 1px solid #bfdbfe;
+    border-radius: 6px; padding: 3px 10px;
+    color: #2563eb; text-decoration: none;
+    font-size: 0.82rem; font-weight: 600;
+}
+.map-link:hover { background: #dbeafe; }
+
+/* ── ランク凡例 ─────────────────────────────────── */
+.rank-legend {
+    display: flex; gap: 1.2rem; flex-wrap: wrap;
+    background: white; border-radius: 10px;
+    padding: 0.7rem 1.2rem;
+    border: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+}
+.rank-legend .rl-item {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.84rem; color: #475569; font-weight: 600;
+}
+.rank-legend .rl-dot {
+    display: inline-block; width: 12px; height: 12px; border-radius: 50%;
 }
 
 /* ── セクションヘッダー ─────────────────────────── */
 .section-header {
-    display: flex; align-items: center; gap: 0.5rem;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 0.5rem;
+    display: flex; align-items: center; gap: 0.6rem;
+    border-bottom: 3px solid #e2e8f0;
+    padding-bottom: 0.6rem; margin-bottom: 1.2rem; margin-top: 0.8rem;
 }
 .section-header span {
-    font-size: 1rem; font-weight: 700; color: #1e293b;
+    font-size: 1.15rem; font-weight: 800; color: #1e293b; letter-spacing: 0.01em;
 }
 
 /* ── ランクバッジ ────────────────────────────────── */
@@ -183,12 +275,19 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
 .alert-card .ac-name { font-weight:700; color:#1e293b; font-size:0.95rem; }
 .alert-card .ac-sub  { font-size:0.78rem; color:#64748b; margin-top:0.1rem; }
 
-/* ── テーブル微調整 ─────────────────────────────── */
+/* ── テーブル（見やすく大きく）──────────────────── */
 [data-testid="stDataFrame"] th {
-    background: #f1f5f9 !important; color: #475569 !important;
-    font-size: 0.8rem !important; font-weight: 600 !important;
+    background: #1e3a5f !important; color: #e2e8f0 !important;
+    font-size: 0.92rem !important; font-weight: 700 !important;
+    padding: 0.7rem 0.9rem !important;
 }
-[data-testid="stDataFrame"] td { font-size: 0.85rem !important; }
+[data-testid="stDataFrame"] td {
+    font-size: 0.95rem !important;
+    padding: 0.6rem 0.9rem !important;
+}
+[data-testid="stDataFrame"] tr:nth-child(even) td {
+    background: #f8fafc !important;
+}
 
 /* ── ボタン ─────────────────────────────────────── */
 .stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"] {
@@ -341,13 +440,72 @@ def rank_badge(rank: str) -> str:
     return f'<span class="rank-badge rank-{rank}">{label}</span>'
 
 
-def metric_card(label: str, value: str, sub: str = "", color: str = "#2563eb") -> str:
+def metric_card(label: str, value: str, sub: str = "", color: str = "#2563eb", icon: str = "🌉") -> str:
     return f"""
-<div class="metric-card" style="border-left-color:{color}">
-  <div class="mc-label">{label}</div>
-  <div class="mc-value" style="color:{color}">{value}</div>
-  <div class="mc-sub">{sub}</div>
+<div class="metric-card" style="background:linear-gradient(135deg,{color} 0%,{color}cc 100%)">
+  <div class="mc-icon-wrap">{icon}</div>
+  <div class="mc-body">
+    <div class="mc-value">{value}</div>
+    <div class="mc-label">{label}</div>
+    <div class="mc-sub">{sub}</div>
+  </div>
 </div>"""
+
+
+def render_bridge_table(df) -> str:
+    """橋梁一覧をHTML表で描画する（管理番号赤字・地図ボタン・健全度ドット付き）"""
+    RANK_DOT = {
+        "I":   "#16a34a",
+        "II":  "#d97706",
+        "III": "#ea580c",
+        "IV":  "#dc2626",
+    }
+    rows = []
+    for _, r in df.iterrows():
+        rank     = str(r.get("current_health_rank") or "-")
+        dot_color = RANK_DOT.get(rank, "#94a3b8")
+        dot      = (f'<span style="display:inline-block;width:13px;height:13px;'
+                    f'border-radius:50%;background:{dot_color};'
+                    f'vertical-align:middle;margin-right:5px;"></span>')
+
+        lat, lon = r.get("latitude"), r.get("longitude")
+        if lat and lon:
+            url = f"https://www.google.com/maps?q={lat},{lon}&z=17"
+            map_cell = f'<a href="{url}" target="_blank" class="map-link">📍 地図</a>'
+        else:
+            map_cell = '<span style="color:#94a3b8">-</span>'
+
+        last_date = r.get("last_inspection_date") or "-"
+        last_cell = (f'<span style="color:#475569">📅 {last_date}</span>'
+                     if last_date != "-" else "-")
+        next_yr   = r.get("next_inspection_year")
+        next_cell = (f'<span style="color:#475569">📅 {next_yr}年</span>'
+                     if next_yr else "-")
+        access    = str(r.get("access_method") or "-")
+        insp_cnt  = int(r.get("insp_count") or 0)
+
+        rows.append(f"""<tr>
+          <td><span class="bridge-code">{r['bridge_code']}</span></td>
+          <td><strong>{r['bridge_name']}</strong></td>
+          <td>{r.get('route_name') or '-'}</td>
+          <td>{r.get('location_name') or '-'}</td>
+          <td>{map_cell}</td>
+          <td>{last_cell}</td>
+          <td>{next_cell}</td>
+          <td>{dot}{rank}</td>
+          <td>{access}</td>
+          <td style="text-align:center;color:#64748b">{insp_cnt}</td>
+        </tr>""")
+
+    rows_html = "\n".join(rows) if rows else "<tr><td colspan='10' style='text-align:center;padding:2rem;color:#94a3b8'>該当する橋梁がありません</td></tr>"
+    return f"""<div class="bridge-table-wrap"><table class="bridge-list-table">
+  <thead><tr>
+    <th>管理番号</th><th>橋梁名</th><th>路線名</th><th>所在地</th>
+    <th>地図</th><th>前回点検</th><th>次回点検予定</th>
+    <th>健全性</th><th>点検足場</th><th>点検数</th>
+  </tr></thead>
+  <tbody>{rows_html}</tbody>
+</table></div>"""
 
 
 def gmaps_url(lat, lon) -> str | None:
@@ -359,11 +517,35 @@ def gmaps_url(lat, lon) -> str | None:
 # ──────────────────────────────────────────────────────────
 # DB ユーティリティ
 # ──────────────────────────────────────────────────────────
+def _ensure_db():
+    """初回起動時にDBとサンプルデータを自動生成する（Replit等クラウド環境向け）"""
+    if DB_PATH.exists():
+        return
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    scripts_dir = Path(__file__).parent / "scripts"
+    sys.path.insert(0, str(scripts_dir))
+    import generate_dummy_data as _gdd  # noqa: PLC0415
+    con = _gdd.create_database()
+    _gdd.insert_dummy_data(con)
+    con.close()
+    # ストレージフォルダも作成
+    import init_storage as _is  # noqa: PLC0415
+    _is.init_storage()
+
+
+_ensure_db()
+
+# DB マイグレーション: access_method 列がなければ追加
+with sqlite3.connect(DB_PATH) as _mc:
+    try:
+        _mc.execute("ALTER TABLE inspections ADD COLUMN access_method TEXT")
+        _mc.commit()
+    except sqlite3.OperationalError:
+        pass
+
+
 @st.cache_resource
 def get_connection():
-    if not DB_PATH.exists():
-        st.error("データベースが見つかりません。先に `python scripts/generate_dummy_data.py` を実行してください。")
-        st.stop()
     con = sqlite3.connect(DB_PATH, check_same_thread=False)
     con.row_factory = sqlite3.Row
     return con
@@ -398,9 +580,9 @@ def _insp_id_from_label(bridge_id: int, label: str):
         return None
 
 
-def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Path):
+def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Path, drawings_dir: Path):
     con = get_connection()
-    st.caption(f"📂 `storage/bridges/{bridge_code}/`　（photos/ と forms/ に直接置くことも可能）")
+    st.caption(f"📂 `storage/bridges/{bridge_code}/`　（photos/ / forms/ / drawings/ に直接置くことも可能）")
 
     sec_photo, sec_form = st.columns(2)
 
@@ -487,7 +669,8 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
 
         db_docs = query_df(
             "SELECT doc_id, doc_path, file_name, doc_type, file_size, description, uploaded_at "
-            "FROM documents WHERE bridge_id=? ORDER BY uploaded_at DESC", (bridge_id,))
+            "FROM documents WHERE bridge_id=? AND doc_path LIKE ? ORDER BY uploaded_at DESC",
+            (bridge_id, f"bridges/{bridge_code}/forms/%"))
         disk_docs = [p for p in sorted(forms_dir.glob("*")) if p.suffix.lower() in DOC_EXTS]
 
         if not db_docs.empty:
@@ -518,6 +701,70 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
         else:
             st.info("帳票・調査様式はまだ登録されていません。")
 
+    # ── 一般図・図面 ─────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    section_header("📐", "一般図・図面")
+    drawings_dir.mkdir(parents=True, exist_ok=True)
+    DRAW_TYPES = ["一般図", "平面図", "側面図", "断面図", "構造図", "その他"]
+    with st.expander("＋ 図面ファイルを追加"):
+        up_draw = st.file_uploader(
+            "図面ファイル（PDF/DWG/画像）",
+            type=["pdf", "jpg", "jpeg", "png", "xlsx", "xls", "docx"],
+            accept_multiple_files=True,
+            key=f"up_draw_{bridge_id}",
+        )
+        dr_type = st.selectbox("図面種別", DRAW_TYPES, key=f"drt_{bridge_id}")
+        dr_desc = st.text_input("説明（任意）", key=f"drd_{bridge_id}")
+        if st.button("図面を保存", key=f"drbtn_{bridge_id}", type="primary") and up_draw:
+            for uf in up_draw:
+                safe_name = _safe_filename(uf.name)
+                data = uf.getvalue()
+                (drawings_dir / safe_name).write_bytes(data)
+                rel_path = f"bridges/{bridge_code}/drawings/{safe_name}"
+                con.execute(
+                    "INSERT INTO documents (bridge_id, inspection_id, doc_path, "
+                    "file_name, doc_type, file_size, description, uploaded_at) "
+                    "VALUES (?,?,?,?,?,?,?,datetime('now','localtime'))",
+                    (bridge_id, None, rel_path, safe_name, dr_type, len(data), dr_desc or None),
+                )
+            con.commit()
+            st.success(f"{len(up_draw)}件の図面を保存しました")
+            st.rerun()
+
+    db_draws = query_df(
+        "SELECT doc_id, doc_path, file_name, doc_type, file_size, description, uploaded_at "
+        "FROM documents WHERE bridge_id=? AND doc_path LIKE ? ORDER BY uploaded_at DESC",
+        (bridge_id, f"bridges/{bridge_code}/drawings/%"))
+    disk_draws = [p for p in sorted(drawings_dir.glob("*")) if p.suffix.lower() in DOC_EXTS | {".jpg",".jpeg",".png"}]
+
+    if not db_draws.empty:
+        st.caption(f"登録済み: {len(db_draws)}件")
+        for _, row in db_draws.iterrows():
+            f_path = drawings_dir / row["file_name"]
+            icon = FILE_ICONS.get(Path(row["file_name"]).suffix.lower(), "📐")
+            size_kb = f"{row['file_size'] // 1024} KB" if row["file_size"] else "-"
+            c1, c2 = st.columns([4, 1])
+            with c1:
+                st.markdown(f"{icon} **{row['file_name']}**　`{row['doc_type'] or '-'}`　{size_kb}　_{row['uploaded_at'] or ''}_")
+                if row["description"]:
+                    st.caption(row["description"])
+            with c2:
+                if f_path.exists():
+                    st.download_button("⬇ DL", f_path.read_bytes(),
+                        file_name=row["file_name"], key=f"ddraw_{row['doc_id']}")
+                else:
+                    st.caption("⚠なし")
+            st.divider()
+    elif disk_draws:
+        st.caption(f"フォルダ内: {len(disk_draws)}件（DB未登録）")
+        for p in disk_draws:
+            icon = FILE_ICONS.get(p.suffix.lower(), "📐")
+            c1, c2 = st.columns([4, 1])
+            c1.markdown(f"{icon} {p.name}")
+            c2.download_button("⬇ DL", p.read_bytes(), file_name=p.name, key=f"ddrawdisk_{p.name}")
+    else:
+        st.info("一般図・図面はまだ登録されていません。")
+
 
 # ──────────────────────────────────────────────────────────
 # CSS 注入 & サイドバー
@@ -525,15 +772,18 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
 inject_css()
 
 st.sidebar.markdown("""
-<div style="padding:1rem 0.5rem 0.5rem;">
-  <div style="font-size:1.4rem; font-weight:800; color:#f1f5f9; letter-spacing:0.02em;">
+<div style="padding:1.2rem 0.8rem 0.6rem;">
+  <div style="font-size:1.6rem; font-weight:900; color:#f1f5f9; letter-spacing:0.02em; line-height:1.2;">
     🌉 橋梁管理
   </div>
-  <div style="font-size:0.72rem; color:#94a3b8; margin-top:0.2rem;">
+  <div style="font-size:0.78rem; color:#94a3b8; margin-top:0.3rem; font-weight:500; letter-spacing:0.04em;">
     Bridge Inspection System
   </div>
 </div>
-<hr style="border-color:#334155; margin:0.5rem 0 1rem;">
+<hr style="border-color:#2d4a6b; margin:0.4rem 0 0.8rem;">
+<div style="padding:0 0.5rem 0.5rem; font-size:0.72rem; color:#64748b; font-weight:600; letter-spacing:0.08em; text-transform:uppercase;">
+  ナビゲーション
+</div>
 """, unsafe_allow_html=True)
 
 page = st.sidebar.radio(
@@ -543,10 +793,11 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.markdown("""
-<hr style="border-color:#334155; margin:1.5rem 0 0.5rem;">
-<div style="font-size:0.72rem; color:#475569; padding:0 0.5rem 1rem;">
-  国土交通省「橋梁定期点検要領」準拠<br>
-  SQLite + Streamlit
+<hr style="border-color:#2d4a6b; margin:1.5rem 0 0.8rem;">
+<div style="font-size:0.76rem; color:#475569; padding:0 0.8rem 1.2rem; line-height:1.8;">
+  📋 国土交通省<br>
+  　橋梁定期点検要領 準拠<br>
+  🗄️ SQLite + Streamlit
 </div>
 """, unsafe_allow_html=True)
 
@@ -555,7 +806,7 @@ st.sidebar.markdown("""
 # 1. ダッシュボード
 # ──────────────────────────────────────────────────────────
 if page == "📊 ダッシュボード":
-    page_header("📊 橋梁管理 ダッシュボード", "管理橋梁の健全性状況と点検記録の概要")
+    page_header("📊 橋梁管理 ダッシュボード", "管理橋梁の健全性状況・点検状況の一覧")
 
     df_summary = query_df(
         "SELECT current_health_rank, COUNT(*) as cnt FROM bridges WHERE is_active=1 "
@@ -564,50 +815,40 @@ if page == "📊 ダッシュボード":
     rank_counts = dict(zip(df_summary["current_health_rank"], df_summary["cnt"]))
     total = sum(rank_counts.values())
 
-    # ── メトリクスカード ──────────────────────────────────
+    # ── メトリクスカード（全面カラー）────────────────────
     cols = st.columns(5)
     cards = [
-        ("管理橋梁数（総計）", f"{total}", "is_active = 1", "#2563eb"),
-        ("I : 健全",           f"{rank_counts.get('I', 0)}",   "定期点検・措置不要", RANK_COLOR["I"]),
-        ("II : 予防保全段階",   f"{rank_counts.get('II', 0)}",  "監視・予防保全措置", RANK_COLOR["II"]),
-        ("III : 早期措置段階",  f"{rank_counts.get('III', 0)}", "早期補修が必要",     RANK_COLOR["III"]),
-        ("IV : 緊急措置段階",   f"{rank_counts.get('IV', 0)}",  "緊急補修・通行規制", RANK_COLOR["IV"]),
+        ("管理橋梁数（総計）", f"{total}",                     "全管理橋梁",         "#2563eb", "🌉"),
+        ("I : 健全",           f"{rank_counts.get('I', 0)}",   "措置不要",           RANK_COLOR["I"],   "✅"),
+        ("II : 予防保全",      f"{rank_counts.get('II', 0)}",  "監視・予防保全措置", RANK_COLOR["II"],  "🔔"),
+        ("III : 早期措置",     f"{rank_counts.get('III', 0)}", "早期補修が必要",     RANK_COLOR["III"], "⚠️"),
+        ("IV : 緊急措置",      f"{rank_counts.get('IV', 0)}",  "緊急補修・通行規制検討", RANK_COLOR["IV"], "🚨"),
     ]
-    for col, (label, val, sub, color) in zip(cols, cards):
+    for col, (label, val, sub, color, icon) in zip(cols, cards):
         with col:
-            st.markdown(metric_card(label, val + " 橋", sub, color), unsafe_allow_html=True)
+            st.markdown(metric_card(label, val + " 橋", sub, color, icon), unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    col_l, col_r = st.columns([1, 2])
-
-    with col_l:
-        section_header("📈", "健全性ランク分布")
-        chart_df = (
-            df_summary
-            .rename(columns={"current_health_rank": "ランク", "cnt": "橋梁数"})
-            .set_index("ランク")
-        )
-        st.bar_chart(chart_df, color="#2563eb", height=260)
-
-    with col_r:
-        section_header("⚠️", "緊急・早期措置が必要な橋梁")
-        df_urgent = query_df(
-            """SELECT bridge_code, bridge_name, route_name,
-                      current_health_rank, last_inspection_date, last_countermeasure
-               FROM v_bridges_latest
-               WHERE current_health_rank IN ('III','IV')
-               ORDER BY current_health_rank DESC"""
-        )
-        if df_urgent.empty:
-            st.success("現在、緊急・早期措置が必要な橋梁はありません。")
-        else:
-            for _, r in df_urgent.iterrows():
-                is_iv  = r["current_health_rank"] == "IV"
-                cls    = "" if is_iv else "warn"
-                icon   = "🚨" if is_iv else "⚠️"
-                cm     = COUNTERMEASURE_LABEL.get(r["last_countermeasure"], r["last_countermeasure"] or "-")
-                date   = r["last_inspection_date"] or "未点検"
+    section_header("⚠️", "緊急・早期措置が必要な橋梁")
+    df_urgent = query_df(
+        """SELECT bridge_code, bridge_name, route_name,
+                  current_health_rank, last_inspection_date, last_countermeasure
+           FROM v_bridges_latest
+           WHERE current_health_rank IN ('III','IV')
+           ORDER BY current_health_rank DESC"""
+    )
+    if df_urgent.empty:
+        st.success("現在、緊急・早期措置が必要な橋梁はありません。")
+    else:
+        cols_alert = st.columns(2)
+        for i, (_, r) in enumerate(df_urgent.iterrows()):
+            is_iv = r["current_health_rank"] == "IV"
+            cls   = "" if is_iv else "warn"
+            icon  = "🚨" if is_iv else "⚠️"
+            cm    = COUNTERMEASURE_LABEL.get(r["last_countermeasure"], r["last_countermeasure"] or "-")
+            date  = r["last_inspection_date"] or "未点検"
+            with cols_alert[i % 2]:
                 st.markdown(f"""
 <div class="alert-card {cls}">
   <div class="ac-icon">{icon}</div>
@@ -621,21 +862,63 @@ if page == "📊 ダッシュボード":
 """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    section_header("📋", "直近の点検記録（最新10件）")
-    df_recent = query_df(
-        """SELECT b.bridge_code, b.bridge_name, i.inspection_date,
-                  i.health_rank, i.countermeasure_type, i.inspector_name
-           FROM inspections i JOIN bridges b ON i.bridge_id = b.bridge_id
-           ORDER BY i.inspection_date DESC LIMIT 10"""
+
+    # ── 橋梁一覧テーブル ──────────────────────────────────
+    section_header("🌉", "橋梁一覧")
+
+    # 検索バー
+    col_kw, _ = st.columns([3, 1])
+    with col_kw:
+        kw = st.text_input(
+            "", placeholder="🔍 橋梁名・管理番号・場所で検索...",
+            label_visibility="collapsed",
+        )
+
+    df_list = query_df(
+        """SELECT
+               b.bridge_code, b.bridge_name,
+               r.route_name, b.location_name,
+               b.latitude, b.longitude,
+               i.inspection_date          AS last_inspection_date,
+               i.next_inspection_year,
+               COALESCE(i.access_method, '未記録') AS access_method,
+               b.current_health_rank,
+               (SELECT COUNT(*) FROM inspections WHERE bridge_id = b.bridge_id) AS insp_count
+           FROM bridges b
+           LEFT JOIN routes r ON b.route_id = r.route_id
+           LEFT JOIN inspections i ON i.inspection_id = (
+               SELECT inspection_id FROM inspections
+               WHERE bridge_id = b.bridge_id
+               ORDER BY inspection_date DESC LIMIT 1
+           )
+           WHERE b.is_active = 1
+           ORDER BY b.bridge_code"""
     )
-    st.dataframe(
-        df_recent.rename(columns={
-            "bridge_code": "管理番号", "bridge_name": "橋名",
-            "inspection_date": "点検日", "health_rank": "ランク",
-            "countermeasure_type": "措置", "inspector_name": "点検者",
-        }),
-        hide_index=True, use_container_width=True,
+
+    if kw:
+        mask = (
+            df_list["bridge_code"].str.contains(kw, case=False, na=False) |
+            df_list["bridge_name"].str.contains(kw, case=False, na=False) |
+            df_list["location_name"].fillna("").str.contains(kw, case=False, na=False)
+        )
+        df_list = df_list[mask]
+
+    st.markdown(
+        f'<p style="color:#64748b;font-size:0.86rem;margin-bottom:0.5rem;">'
+        f'管理橋梁数: <strong>{len(df_list)}</strong>件</p>',
+        unsafe_allow_html=True,
     )
+    st.markdown(render_bridge_table(df_list), unsafe_allow_html=True)
+
+    # 凡例
+    st.markdown("""
+<div class="rank-legend">
+  <span class="rl-item"><span class="rl-dot" style="background:#16a34a"></span>I : 健全</span>
+  <span class="rl-item"><span class="rl-dot" style="background:#d97706"></span>II : 予防保全段階</span>
+  <span class="rl-item"><span class="rl-dot" style="background:#ea580c"></span>III : 早期措置段階</span>
+  <span class="rl-item"><span class="rl-dot" style="background:#dc2626"></span>IV : 緊急措置段階</span>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ──────────────────────────────────────────────────────────
@@ -780,11 +1063,13 @@ elif page == "🔍 橋梁詳細":
 </div>
 """, unsafe_allow_html=True)
 
-    bridge_code = b["bridge_code"]
-    photos_dir  = STORAGE_ROOT / bridge_code / "photos"
-    forms_dir   = STORAGE_ROOT / bridge_code / "forms"
+    bridge_code  = b["bridge_code"]
+    photos_dir   = STORAGE_ROOT / bridge_code / "photos"
+    forms_dir    = STORAGE_ROOT / bridge_code / "forms"
+    drawings_dir = STORAGE_ROOT / bridge_code / "drawings"
     photos_dir.mkdir(parents=True, exist_ok=True)
     forms_dir.mkdir(parents=True, exist_ok=True)
+    drawings_dir.mkdir(parents=True, exist_ok=True)
 
     tab1, tab2, tab3, tab4 = st.tabs(["📋 基本情報", "🔬 点検履歴", "🔧 補修履歴", "📁 ファイル管理"])
 
@@ -896,7 +1181,7 @@ elif page == "🔍 橋梁詳細":
             )
 
     with tab4:
-        _tab_files(bridge_id, bridge_code, photos_dir, forms_dir)
+        _tab_files(bridge_id, bridge_code, photos_dir, forms_dir, drawings_dir)
 
 
 # ──────────────────────────────────────────────────────────
@@ -924,6 +1209,7 @@ elif page == "📋 点検記録入力":
                                           format_func=lambda x: RANK_LABEL[x])
             countermeasure = st.selectbox("措置区分", ["A", "B", "C", "D", "E"],
                                           format_func=lambda x: COUNTERMEASURE_LABEL[x])
+            access_method  = st.selectbox("点検足場", ACCESS_METHOD_LIST)
         with col2:
             inspector_name = st.text_input("点検者氏名")
             inspector_org  = st.text_input("点検機関名")
@@ -947,21 +1233,85 @@ elif page == "📋 点検記録入力":
                    (bridge_id, inspection_date, inspection_type, inspector_name,
                     inspector_org, health_rank, overall_judgment,
                     damage_superstructure, damage_substructure,
-                    countermeasure_type, next_inspection_year, estimated_cost)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    countermeasure_type, next_inspection_year, estimated_cost,
+                    access_method)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (bridge_id, str(insp_date), insp_type, inspector_name,
                  inspector_org, health_rank, overall, dmg_super, dmg_sub,
-                 countermeasure, next_year, est_cost),
+                 countermeasure, next_year, est_cost, access_method),
             )
             con.execute(
                 "UPDATE bridges SET current_health_rank=?, updated_at=datetime('now','localtime') WHERE bridge_id=?",
                 (health_rank, bridge_id),
             )
+            new_insp_id = con.execute("SELECT last_insert_rowid()").fetchone()[0]
+            con.execute(
+                "UPDATE bridges SET current_health_rank=?, updated_at=datetime('now','localtime') WHERE bridge_id=?",
+                (health_rank, bridge_id),
+            )
             con.commit()
+            st.session_state["last_insp_id"]        = new_insp_id
+            st.session_state["last_insp_bridge_id"] = bridge_id
             st.success(f"✅ 点検記録を登録しました（{selected} / {insp_date}）")
             st.cache_resource.clear()
         except Exception as e:
             st.error(f"登録に失敗しました: {e}")
+
+    # ── 点検調書アップロード（登録直後に表示）─────────────
+    if (st.session_state.get("last_insp_bridge_id") == bridge_id
+            and "last_insp_id" in st.session_state):
+        insp_id       = st.session_state["last_insp_id"]
+        b_code_row    = query_df("SELECT bridge_code FROM bridges WHERE bridge_id=?", (bridge_id,))
+        b_code        = b_code_row["bridge_code"].values[0] if not b_code_row.empty else "unknown"
+        f_dir         = STORAGE_ROOT / b_code / "forms"
+        f_dir.mkdir(parents=True, exist_ok=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        section_header("📄", "点検調書のアップロード")
+        st.caption(f"登録した点検記録（ID: {insp_id}）に点検調書ファイルを添付します")
+
+        FILE_ICONS_INP = {".pdf":"📕",".xlsx":"📗",".xls":"📗",".docx":"📘",".doc":"📘"}
+        up_chosho = st.file_uploader(
+            "点検調書・添付ファイル（PDF / Excel / Word）",
+            type=["pdf","xlsx","xls","docx","doc"],
+            accept_multiple_files=True,
+            key=f"chosho_{insp_id}",
+        )
+        chosho_desc = st.text_input("説明（任意）", key=f"chosho_desc_{insp_id}")
+
+        if st.button("📤 点検調書を保存", key=f"chosho_save_{insp_id}", type="primary") and up_chosho:
+            saved = 0
+            for uf in up_chosho:
+                safe_name = _safe_filename(uf.name)
+                data = uf.getvalue()
+                (f_dir / safe_name).write_bytes(data)
+                rel_path = f"bridges/{b_code}/forms/{safe_name}"
+                con.execute(
+                    "INSERT INTO documents (bridge_id, inspection_id, doc_path, "
+                    "file_name, doc_type, file_size, description, uploaded_at) "
+                    "VALUES (?,?,?,?,?,?,?,datetime('now','localtime'))",
+                    (bridge_id, insp_id, rel_path, safe_name,
+                     "点検調書", len(data), chosho_desc or None),
+                )
+                saved += 1
+            con.commit()
+            st.success(f"✅ {saved}件の点検調書を保存しました")
+
+        # 登録済み調書一覧
+        db_chosho = query_df(
+            "SELECT doc_id, file_name, doc_type, file_size, uploaded_at "
+            "FROM documents WHERE inspection_id=? ORDER BY uploaded_at DESC", (insp_id,))
+        if not db_chosho.empty:
+            st.caption(f"この点検に添付済み: {len(db_chosho)}件")
+            for _, row in db_chosho.iterrows():
+                icon = FILE_ICONS_INP.get(Path(row["file_name"]).suffix.lower(), "📎")
+                size_kb = f"{row['file_size'] // 1024} KB" if row["file_size"] else "-"
+                fp = f_dir / row["file_name"]
+                c1, c2 = st.columns([4, 1])
+                c1.markdown(f"{icon} **{row['file_name']}**　{size_kb}　_{row['uploaded_at'] or ''}_")
+                if fp.exists():
+                    c2.download_button("⬇ DL", fp.read_bytes(),
+                        file_name=row["file_name"], key=f"dl_chosho_{row['doc_id']}")
 
 
 # ──────────────────────────────────────────────────────────
