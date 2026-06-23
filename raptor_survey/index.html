@@ -314,15 +314,9 @@
         </div>
       </div>
       <hr class="divider">
-      <div class="grid-2">
-        <div class="field">
-          <label>カメラマン</label>
-          <input type="text" id="cameraman" placeholder="氏名・連絡先など">
-        </div>
-        <div class="field">
-          <label>調査メモ</label>
-          <input type="text" id="survey_memo" placeholder="例：宇宙BPなど、タジミー〒OO-OO-OO など">
-        </div>
+      <div class="field">
+        <label>調査メモ</label>
+        <input type="text" id="survey_memo" placeholder="例：宇宙BPなど、タジミー〒OO-OO-OO など">
       </div>
     </div>
   </div>
@@ -622,7 +616,6 @@
       ['天候', data.weather],
       ['調査者', data.surveyor],
       ['確認者', data.confirmer],
-      ['カメラマン', data.cameraman],
       ['調査メモ', data.survey_memo],
       [''],
       ['【確認した巣木の情報】'],
@@ -717,7 +710,6 @@
       weather:          getVal('weather'),
       surveyor:         getVal('surveyor'),
       confirmer:        getVal('confirmer'),
-      cameraman:        getVal('cameraman'),
       survey_memo:      getVal('survey_memo'),
       symbol:           getVal('symbol'),
       new_existing:     getRadio('new_existing'),
