@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>猛禽類営巣地(木)確認調査票</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Meiryo', 'Yu Gothic', 'Hiragino Kaku Gothic Pro', sans-serif;
+      font-size: 14px;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+      color: white;
+      padding: 20px 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      margin-top: 4px;
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .section-title {
+      background: #2d6a4f;
+      color: white;
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .section-body {
+      padding: 20px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #4a5568;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .field input[type="text"],
+    .field input[type="date"],
+    .field input[type="number"],
+    .field select,
+    .field textarea {
+      border: 1.5px solid #cbd5e0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      background: #fafafa;
+      width: 100%;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: #2d6a4f;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .radio-group, .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 8px 0;
+    }
+
+    .radio-group label, .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: normal;
+      color: #2d3748;
+      cursor: pointer;
+    }
+
+    .radio-group input[type="radio"],
+    .checkbox-group input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #2d6a4f;
+      cursor: pointer;
+    }
+
+    .inline-fields {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .inline-fields .field {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .unit {
+      color: #718096;
+      font-size: 13px;
+      padding-bottom: 2px;
+      white-space: nowrap;
+      align-self: flex-end;
+      margin-bottom: 8px;
+    }
+
+    .sub-label {
+      font-size: 12px;
+      color: #718096;
+      font-weight: normal;
+      margin-top: 2px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #e2e8f0;
+      margin: 16px 0;
+    }
+
+    .nested-section {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .nested-title {
+      background: #f7fafc;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #2d6a4f;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .nested-body {
+      padding: 14px;
+    }
+
+    .button-bar {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 30px;
+      padding-bottom: 40px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-excel {
+      background: #1d7340;
+      color: white;
+    }
+    .btn-excel:hover { background: #155d33; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(29,115,64,0.3); }
+
+    .btn-clear {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+    .btn-clear:hover { background: #cbd5e0; }
+
+    .btn-print {
+      background: #3182ce;
+      color: white;
+    }
+    .btn-print:hover { background: #2b6cb0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(49,130,206,0.3); }
+
+    .company-badge {
+      text-align: right;
+      color: #718096;
+      font-size: 12px;
+      padding: 10px 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #2d6a4f;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 700px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      header h1 { font-size: 17px; }
+    }
+
+    @media print {
+      .button-bar { display: none; }
+      header { background: #2d6a4f !important; -webkit-print-color-adjust: exact; }
+      .section { box-shadow: none; border: 1px solid #ccc; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>猛禽類営巣地(木)確認調査票</h1>
+  <p>Raptor Nesting Site (Tree) Confirmation Survey Form — 株式会社ダイミック</p>
+</header>
+
+<div class="container">
+
+  <!-- 基本情報 -->
+  <div class="section">
+    <div class="section-title">基本情報</div>
+    <div class="section-body">
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="field" style="grid-column: span 2">
+          <label>業務名称</label>
+          <input type="text" id="project_name" placeholder="業務名称を入力">
+        </div>
+      </div>
+      <div class="grid-4">
+        <div class="field">
+          <label>調査日</label>
+          <input type="date" id="survey_date">
+        </div>
+        <div class="field">
+          <label>天候</label>
+          <select id="weather">
+            <option value="">選択</option>
+            <option>晴れ</option>
+            <option>曇り</option>
+            <option>雨</option>
+            <option>雪</option>
+            <option>晴れ時々曇り</option>
+            <option>曇り時々雨</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>調査者</label>
+          <input type="text" id="surveyor" placeholder="氏名">
+        </div>
+        <div class="field">
+          <label>確認者</label>
+          <input type="text" id="confirmer" placeholder="氏名">
+        </div>
+      </div>
+      <hr class="divider">
+      <div class="grid-2">
+        <div class="field">
+          <label>カメラマン</label>
+          <input type="text" id="cameraman" placeholder="氏名・連絡先など">
+        </div>
+        <div class="field">
+          <label>調査メモ</label>
+          <input type="text" id="survey_memo" placeholder="例：宇宙BPなど、タジミー〒OO-OO-OO など">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認した巣木の情報 -->
+  <div class="section">
+    <div class="section-title">確認した巣木の情報</div>
+    <div class="section-body">
+
+      <div class="grid-3" style="margin-bottom:16px">
+        <div class="field">
+          <label>記号 / 番号</label>
+          <input type="text" id="symbol" placeholder="例：A-1">
+        </div>
+        <div class="field">
+          <label>新規 / 既存</label>
+          <div class="radio-group">
+            <label><input type="radio" name="new_existing" value="新規"> 新規</label>
+            <label><input type="radio" name="new_existing" value="既存"> 既存</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>又型</label>
+          <input type="text" id="fork_type" placeholder="例：V字型、Y字型など">
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="nested-section">
+        <div class="nested-title">営巣木の仕様</div>
+        <div class="nested-body">
+          <div class="grid-4">
+            <div class="field">
+              <label>樹種</label>
+              <input type="text" id="tree_species" placeholder="例：スギ、アカマツ">
+            </div>
+            <div class="field">
+              <label>胸高直径</label>
+              <div class="inline-fields">
+                <input type="number" id="dbh" placeholder="0" min="0" step="0.1">
+                <span class="unit">cm</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>樹高</label>
+              <div class="inline-fields">
+                <input type="number" id="tree_height" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>架巣高さ（地上から）</label>
+              <div class="inline-fields">
+                <input type="number" id="nest_height" placeholder="0" min="0" step="0.1">
+                <span class="unit">m</span>
+              </div>
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top:14px">
+            <div class="field">
+              <label>架巣高さ（地上1.2m換算）</label>
+              <div class="inline-fields">
+                <input type="number" id="nest_height_1_2" placeholder="0" min="0" step="0.1">
+                <span class="unit">cm</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>巣のサイズ（横×縦）</label>
+              <div class="inline-fields">
+                <input type="number" id="nest_width" placeholder="横" min="0" step="1" style="width:80px">
+                <span class="unit">cm ×</span>
+                <input type="number" id="nest_depth" placeholder="縦" min="0" step="1" style="width:80px">
+                <span class="unit">cm</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>架巣木の位置</label>
+              <input type="text" id="nest_position" placeholder="例：農家の別の後ろ約10m">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="grid-2">
+        <div class="field">
+          <label>巣の形状</label>
+          <div class="radio-group">
+            <label><input type="radio" name="nest_shape" value="丸"> 丸</label>
+            <label><input type="radio" name="nest_shape" value="楕円"> 楕円</label>
+            <label><input type="radio" name="nest_shape" value="その他"> その他</label>
+          </div>
+          <input type="text" id="nest_shape_other" placeholder="その他の場合詳細を入力" style="margin-top:6px">
+        </div>
+
+        <div class="field">
+          <label>巣材の状態</label>
+          <div class="radio-group">
+            <label><input type="radio" name="nest_material" value="初期"> 初期</label>
+            <label><input type="radio" name="nest_material" value="中期"> 中期</label>
+            <label><input type="radio" name="nest_material" value="ほぼ完成"> ほぼ完成</label>
+            <label><input type="radio" name="nest_material" value="その他"> その他</label>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field" style="margin-bottom:16px">
+        <label>営巣の状況</label>
+        <textarea id="nest_status" placeholder="例：食痕あり、細い枝がたくさん乗っている など"></textarea>
+      </div>
+
+      <div class="nested-section">
+        <div class="nested-title">判定理由</div>
+        <div class="nested-body">
+          <div class="field" style="margin-bottom:12px">
+            <label>判定</label>
+            <div class="radio-group">
+              <label><input type="radio" name="judgment" value="無" id="judg_none"> 無</label>
+              <label><input type="radio" name="judgment" value="有" id="judg_yes"> 有</label>
+              <label><input type="radio" name="judgment" value="その他" id="judg_other"> その他</label>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:12px">
+            <label>有の場合の理由</label>
+            <div class="checkbox-group">
+              <label><input type="checkbox" id="reason_lost"> 流失</label>
+              <label><input type="checkbox" id="reason_cut"> 伐採</label>
+              <label><input type="checkbox" id="reason_ground"> 地</label>
+              <label><input type="checkbox" id="reason_thunder"> 雷が来てた</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>その他・詳細</label>
+            <input type="text" id="judgment_detail" placeholder="判定理由の詳細">
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="nested-section">
+        <div class="nested-title">写真確認</div>
+        <div class="nested-body">
+          <div class="grid-2">
+            <div class="field">
+              <label>巣の写真</label>
+              <div class="radio-group">
+                <label><input type="radio" name="photo_nest" value="撮りました"> 撮りました</label>
+                <label><input type="radio" name="photo_nest" value="撮り忘れました"> 撮り忘れました</label>
+              </div>
+            </div>
+            <div class="field">
+              <label>県・周辺の写真</label>
+              <div class="radio-group">
+                <label><input type="radio" name="photo_area" value="撮りました"> 撮りました</label>
+                <label><input type="radio" name="photo_area" value="撮り忘れました"> 撮り忘れました</label>
+              </div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>写真メモ・備考</label>
+            <input type="text" id="photo_memo" placeholder="撮影上の注意事項など">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 地域区分 -->
+  <div class="section">
+    <div class="section-title">地域区分（地表面の形状・林相）</div>
+    <div class="section-body">
+
+      <div class="field" style="margin-bottom:16px">
+        <label>地表面の形状</label>
+        <div class="radio-group">
+          <label><input type="radio" name="terrain" value="山地"> 山地</label>
+          <label><input type="radio" name="terrain" value="丘陵地"> 丘陵地</label>
+          <label><input type="radio" name="terrain" value="平地"> 平地</label>
+          <label><input type="radio" name="terrain" value="その他"> その他</label>
+        </div>
+        <input type="text" id="terrain_other" placeholder="その他の地形を入力" style="margin-top:6px">
+      </div>
+
+      <div class="nested-section">
+        <div class="nested-title">林相（架巣木を中心に半径20m程度の範囲 ※おおよそでよい）</div>
+        <div class="nested-body">
+          <div class="grid-2">
+            <div class="field">
+              <label>高木層（10.0m以上）</label>
+              <input type="text" id="layer_high" placeholder="例：スギ、ヒノキ など">
+            </div>
+            <div class="field">
+              <label>亜高木層・低木層（5〜10m）</label>
+              <input type="text" id="layer_mid" placeholder="例：アカヒタ、ショウ など">
+            </div>
+            <div class="field">
+              <label>草本層（1〜5m）</label>
+              <input type="text" id="layer_low" placeholder="例：アスキ など">
+            </div>
+            <div class="field">
+              <label>林床（1m未満）</label>
+              <input type="text" id="layer_floor" placeholder="例：シダ類 など">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field" style="margin-bottom:16px">
+        <label>地被区分（自然環境の特徴）</label>
+        <textarea id="ground_cover" placeholder="例：〇〇山の頂上、岩が露岩、地水が風化炭でガラガラ など"></textarea>
+      </div>
+
+      <div class="field">
+        <label>その他・備考</label>
+        <textarea id="region_other" placeholder="その他、地域の特記事項など"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 確認メモ -->
+  <div class="section">
+    <div class="section-title">確認メモ</div>
+    <div class="section-body">
+      <div class="field">
+        <label>確認メモ（自由記述）</label>
+        <textarea id="confirm_memo" style="min-height:100px" placeholder="調査中に気づいたこと、特記事項など自由にご記入ください"></textarea>
+      </div>
+    </div>
+    <div class="company-badge">株式会社ダイミック</div>
+  </div>
+
+  <!-- ボタン -->
+  <div class="button-bar">
+    <button class="btn btn-clear" onclick="clearForm()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 .49-3.51"></path></svg>
+      フォームをリセット
+    </button>
+    <button class="btn btn-print" onclick="window.print()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      印刷
+    </button>
+    <button class="btn btn-excel" onclick="exportToExcel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      Excelに出力
+    </button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  function getRadio(name) {
+    const checked = document.querySelector(`input[name="${name}"]:checked`);
+    return checked ? checked.value : '';
+  }
+
+  function getCheckboxes(ids) {
+    return ids.filter(id => document.getElementById(id)?.checked)
+              .map(id => document.getElementById(id).nextSibling.textContent.trim())
+              .join('、');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function clearForm() {
+    if (!confirm('フォームの内容をすべてリセットしますか？')) return;
+    document.querySelectorAll('input[type="text"], input[type="date"], input[type="number"], select, textarea').forEach(el => el.value = '');
+    document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
+    showToast('フォームをリセットしました');
+  }
+
+  function exportToExcel() {
+    const data = collectFormData();
+
+    // Build worksheet rows
+    const rows = [
+      ['猛禽類営巣地(木)確認調査票', '', '', '', '株式会社ダイミック'],
+      [''],
+      ['【基本情報】'],
+      ['業務名称', data.project_name],
+      ['調査日', data.survey_date],
+      ['天候', data.weather],
+      ['調査者', data.surveyor],
+      ['確認者', data.confirmer],
+      ['カメラマン', data.cameraman],
+      ['調査メモ', data.survey_memo],
+      [''],
+      ['【確認した巣木の情報】'],
+      ['記号 / 番号', data.symbol],
+      ['新規 / 既存', data.new_existing],
+      ['又型', data.fork_type],
+      [''],
+      ['--- 営巣木の仕様 ---'],
+      ['樹種', data.tree_species],
+      ['胸高直径 (cm)', data.dbh],
+      ['樹高 (m)', data.tree_height],
+      ['架巣高さ・地上から (m)', data.nest_height],
+      ['架巣高さ・地上1.2m換算 (cm)', data.nest_height_1_2],
+      ['巣のサイズ 横 (cm)', data.nest_width],
+      ['巣のサイズ 縦 (cm)', data.nest_depth],
+      ['架巣木の位置', data.nest_position],
+      [''],
+      ['巣の形状', data.nest_shape + (data.nest_shape_other ? ' (' + data.nest_shape_other + ')' : '')],
+      ['巣材の状態', data.nest_material],
+      ['営巣の状況', data.nest_status],
+      [''],
+      ['--- 判定理由 ---'],
+      ['判定', data.judgment],
+      ['有の場合の理由', data.judgment_reasons],
+      ['詳細', data.judgment_detail],
+      [''],
+      ['--- 写真確認 ---'],
+      ['巣の写真', data.photo_nest],
+      ['県・周辺の写真', data.photo_area],
+      ['写真メモ', data.photo_memo],
+      [''],
+      ['【地域区分】'],
+      ['地表面の形状', data.terrain + (data.terrain_other ? ' (' + data.terrain_other + ')' : '')],
+      [''],
+      ['--- 林相 (架巣木中心 半径20m程度) ---'],
+      ['高木層 (10.0m以上)', data.layer_high],
+      ['亜高木層・低木層 (5〜10m)', data.layer_mid],
+      ['草本層 (1〜5m)', data.layer_low],
+      ['林床 (1m未満)', data.layer_floor],
+      [''],
+      ['地被区分 (自然環境の特徴)', data.ground_cover],
+      ['その他・備考', data.region_other],
+      [''],
+      ['【確認メモ】'],
+      ['確認メモ', data.confirm_memo],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Column widths
+    ws['!cols'] = [{ wch: 35 }, { wch: 55 }, { wch: 10 }, { wch: 10 }, { wch: 20 }];
+
+    // Merge title row
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
+
+    // Style helpers
+    const titleStyle = { font: { bold: true, sz: 16 }, alignment: { horizontal: 'center' } };
+    const sectionStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '2D6A4F' } } };
+    const subStyle = { font: { bold: true, color: { rgb: '2D6A4F' } } };
+    const labelStyle = { font: { bold: true } };
+
+    function cellRef(r, c) { return XLSX.utils.encode_cell({ r, c }); }
+
+    // Apply styles
+    if (ws['A1']) ws['A1'].s = titleStyle;
+
+    rows.forEach((row, ri) => {
+      const cell = row[0];
+      if (typeof cell === 'string') {
+        if (cell.startsWith('【') && cell.endsWith('】')) {
+          if (ws[cellRef(ri, 0)]) ws[cellRef(ri, 0)].s = sectionStyle;
+        } else if (cell.startsWith('---')) {
+          if (ws[cellRef(ri, 0)]) ws[cellRef(ri, 0)].s = subStyle;
+        } else if (row.length === 2 && row[1] !== undefined) {
+          if (ws[cellRef(ri, 0)]) ws[cellRef(ri, 0)].s = labelStyle;
+        }
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '調査票');
+
+    const filename = `猛禽類営巣地確認調査票_${data.survey_date || '未記入'}_${data.symbol || '未記入'}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    showToast(`Excelファイルを出力しました：${filename}`);
+  }
+
+  function collectFormData() {
+    return {
+      project_name:     getVal('project_name'),
+      survey_date:      getVal('survey_date'),
+      weather:          getVal('weather'),
+      surveyor:         getVal('surveyor'),
+      confirmer:        getVal('confirmer'),
+      cameraman:        getVal('cameraman'),
+      survey_memo:      getVal('survey_memo'),
+      symbol:           getVal('symbol'),
+      new_existing:     getRadio('new_existing'),
+      fork_type:        getVal('fork_type'),
+      tree_species:     getVal('tree_species'),
+      dbh:              getVal('dbh'),
+      tree_height:      getVal('tree_height'),
+      nest_height:      getVal('nest_height'),
+      nest_height_1_2:  getVal('nest_height_1_2'),
+      nest_width:       getVal('nest_width'),
+      nest_depth:       getVal('nest_depth'),
+      nest_position:    getVal('nest_position'),
+      nest_shape:       getRadio('nest_shape'),
+      nest_shape_other: getVal('nest_shape_other'),
+      nest_material:    getRadio('nest_material'),
+      nest_status:      getVal('nest_status'),
+      judgment:         getRadio('judgment'),
+      judgment_reasons: getCheckboxes(['reason_lost','reason_cut','reason_ground','reason_thunder']),
+      judgment_detail:  getVal('judgment_detail'),
+      photo_nest:       getRadio('photo_nest'),
+      photo_area:       getRadio('photo_area'),
+      photo_memo:       getVal('photo_memo'),
+      terrain:          getRadio('terrain'),
+      terrain_other:    getVal('terrain_other'),
+      layer_high:       getVal('layer_high'),
+      layer_mid:        getVal('layer_mid'),
+      layer_low:        getVal('layer_low'),
+      layer_floor:      getVal('layer_floor'),
+      ground_cover:     getVal('ground_cover'),
+      region_other:     getVal('region_other'),
+      confirm_memo:     getVal('confirm_memo'),
+    };
+  }
+</script>
+
+</body>
+</html>
