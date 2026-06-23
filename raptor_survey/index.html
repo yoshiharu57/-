@@ -441,25 +441,21 @@
         <div class="nested-title">判定理由</div>
         <div class="nested-body">
           <div class="field" style="margin-bottom:12px">
-            <label>判定</label>
-            <div class="radio-group">
-              <label><input type="radio" name="judgment" value="無" id="judg_none"> 無</label>
-              <label><input type="radio" name="judgment" value="有" id="judg_yes"> 有</label>
-              <label><input type="radio" name="judgment" value="その他" id="judg_other"> その他</label>
-            </div>
+            <label>種名</label>
+            <input type="text" id="species_name" placeholder="例：サシバ、オオタカ、ハチクマ など">
           </div>
           <div class="field" style="margin-bottom:12px">
-            <label>有の場合の理由</label>
+            <label>判定理由（複数選択可）</label>
             <div class="checkbox-group">
-              <label><input type="checkbox" id="reason_lost"> 流失</label>
-              <label><input type="checkbox" id="reason_cut"> 伐採</label>
-              <label><input type="checkbox" id="reason_ground"> 地</label>
-              <label><input type="checkbox" id="reason_thunder"> 雷が来てた</label>
+              <label><input type="checkbox" id="reason_incubation"> 抱卵状態</label>
+              <label><input type="checkbox" id="reason_entry"> 巣の出入り</label>
+              <label><input type="checkbox" id="reason_food"> 餌の受け渡し</label>
+              <label><input type="checkbox" id="reason_other_judg"> その他</label>
             </div>
           </div>
           <div class="field">
             <label>その他・詳細</label>
-            <input type="text" id="judgment_detail" placeholder="判定理由の詳細">
+            <input type="text" id="judgment_detail" placeholder="判定理由の補足・詳細">
           </div>
         </div>
       </div>
@@ -649,8 +645,8 @@
       ['営巣の状況', data.nest_status],
       [''],
       ['--- 判定理由 ---'],
-      ['判定', data.judgment],
-      ['有の場合の理由', data.judgment_reasons],
+      ['種名', data.species_name],
+      ['判定理由', data.judgment_reasons],
       ['詳細', data.judgment_detail],
       [''],
       ['--- 写真確認 ---'],
@@ -738,8 +734,8 @@
       nest_shape_other: getVal('nest_shape_other'),
       nest_material:    getRadio('nest_material'),
       nest_status:      getVal('nest_status'),
-      judgment:         getRadio('judgment'),
-      judgment_reasons: getCheckboxes(['reason_lost','reason_cut','reason_ground','reason_thunder']),
+      species_name:     getVal('species_name'),
+      judgment_reasons: getCheckboxes(['reason_incubation','reason_entry','reason_food','reason_other_judg']),
       judgment_detail:  getVal('judgment_detail'),
       photo_nest:       getRadio('photo_nest'),
       photo_area:       getRadio('photo_area'),
