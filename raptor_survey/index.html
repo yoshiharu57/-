@@ -305,8 +305,8 @@
           </select>
         </div>
         <div class="field">
-          <label>調査者</label>
-          <input type="text" id="surveyor" placeholder="氏名">
+          <label>調査地区</label>
+          <input type="text" id="survey_area" placeholder="地区名">
         </div>
         <div class="field">
           <label>確認者</label>
@@ -316,7 +316,7 @@
       <hr class="divider">
       <div class="field">
         <label>調査メモ</label>
-        <input type="text" id="survey_memo" placeholder="例：宇宙BPなど、タジミー〒OO-OO-OO など">
+        <input type="text" id="survey_memo" placeholder="">
       </div>
     </div>
   </div>
@@ -328,8 +328,8 @@
 
       <div class="grid-3" style="margin-bottom:16px">
         <div class="field">
-          <label>記号 / 番号</label>
-          <input type="text" id="symbol" placeholder="例：A-1">
+          <label>名称</label>
+          <input type="text" id="symbol" placeholder="名称を入力">
         </div>
         <div class="field">
           <label>新規 / 既存</label>
@@ -339,8 +339,13 @@
           </div>
         </div>
         <div class="field">
-          <label>又型</label>
-          <input type="text" id="fork_type" placeholder="例：V字型、Y字型など">
+          <label>架巣型</label>
+          <select id="fork_type">
+            <option value="">選択</option>
+            <option>樹幹型</option>
+            <option>又型</option>
+            <option>その他</option>
+          </select>
         </div>
       </div>
 
@@ -375,14 +380,7 @@
               </div>
             </div>
           </div>
-          <div class="grid-3" style="margin-top:14px">
-            <div class="field">
-              <label>架巣高さ（地上1.2m換算）</label>
-              <div class="inline-fields">
-                <input type="number" id="nest_height_1_2" placeholder="0" min="0" step="0.1">
-                <span class="unit">cm</span>
-              </div>
-            </div>
+          <div class="grid-2" style="margin-top:14px">
             <div class="field">
               <label>巣のサイズ（横×縦）</label>
               <div class="inline-fields">
@@ -487,11 +485,11 @@
 
   <!-- 地域区分 -->
   <div class="section">
-    <div class="section-title">地域区分（地表面の形状・林相）</div>
+    <div class="section-title">営巣環境の状況</div>
     <div class="section-body">
 
       <div class="field" style="margin-bottom:16px">
-        <label>地表面の形状</label>
+        <label>地形区分</label>
         <div class="radio-group">
           <label><input type="radio" name="terrain" value="山地"> 山地</label>
           <label><input type="radio" name="terrain" value="丘陵地"> 丘陵地</label>
@@ -614,21 +612,20 @@
       ['業務名称', data.project_name],
       ['調査日', data.survey_date],
       ['天候', data.weather],
-      ['調査者', data.surveyor],
+      ['調査地区', data.survey_area],
       ['確認者', data.confirmer],
       ['調査メモ', data.survey_memo],
       [''],
       ['【確認した巣木の情報】'],
-      ['記号 / 番号', data.symbol],
+      ['名称', data.symbol],
       ['新規 / 既存', data.new_existing],
-      ['又型', data.fork_type],
+      ['架巣型', data.fork_type],
       [''],
       ['--- 営巣木の仕様 ---'],
       ['樹種', data.tree_species],
       ['胸高直径 (cm)', data.dbh],
       ['樹高 (m)', data.tree_height],
       ['架巣高さ・地上から (m)', data.nest_height],
-      ['架巣高さ・地上1.2m換算 (cm)', data.nest_height_1_2],
       ['巣のサイズ 横 (cm)', data.nest_width],
       ['巣のサイズ 縦 (cm)', data.nest_depth],
       ['架巣木の位置', data.nest_position],
@@ -647,8 +644,8 @@
       ['県・周辺の写真', data.photo_area],
       ['写真メモ', data.photo_memo],
       [''],
-      ['【地域区分】'],
-      ['地表面の形状', data.terrain + (data.terrain_other ? ' (' + data.terrain_other + ')' : '')],
+      ['【営巣環境の状況】'],
+      ['地形区分', data.terrain + (data.terrain_other ? ' (' + data.terrain_other + ')' : '')],
       [''],
       ['--- 林相 (架巣木中心 半径20m程度) ---'],
       ['高木層 (10.0m以上)', data.layer_high],
@@ -708,7 +705,7 @@
       project_name:     getVal('project_name'),
       survey_date:      getVal('survey_date'),
       weather:          getVal('weather'),
-      surveyor:         getVal('surveyor'),
+      survey_area:      getVal('survey_area'),
       confirmer:        getVal('confirmer'),
       survey_memo:      getVal('survey_memo'),
       symbol:           getVal('symbol'),
@@ -718,7 +715,6 @@
       dbh:              getVal('dbh'),
       tree_height:      getVal('tree_height'),
       nest_height:      getVal('nest_height'),
-      nest_height_1_2:  getVal('nest_height_1_2'),
       nest_width:       getVal('nest_width'),
       nest_depth:       getVal('nest_depth'),
       nest_position:    getVal('nest_position'),
