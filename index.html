@@ -62,11 +62,11 @@
       <div class="grid-4">
         <div class="field"><label>調査日</label><input type="date" id="survey_date"></div>
         <div class="field"><label>天候</label><select id="weather"><option value="">選択</option><option>晴れ</option><option>曇り</option><option>雨</option><option>雪</option><option>晴れ時々曇り</option><option>曇り時々雨</option><option>その他</option></select></div>
-        <div class="field"><label>調査者</label><input type="text" id="surveyor" placeholder="氏名"></div>
+        <div class="field"><label>調査地区</label><input type="text" id="survey_area" placeholder="地区名"></div>
         <div class="field"><label>確認者</label><input type="text" id="confirmer" placeholder="氏名"></div>
       </div>
       <hr class="divider">
-      <div class="field"><label>調査メモ</label><input type="text" id="survey_memo" placeholder="例：宇宙BPなど、タジミー〒OO-OO-OO など"></div>
+      <div class="field"><label>調査メモ</label><input type="text" id="survey_memo" placeholder=""></div>
     </div>
   </div>
 
@@ -74,9 +74,9 @@
     <div class="section-title">確認した巣木の情報</div>
     <div class="section-body">
       <div class="grid-3" style="margin-bottom:16px">
-        <div class="field"><label>記号 / 番号</label><input type="text" id="symbol" placeholder="例：A-1"></div>
+        <div class="field"><label>名称</label><input type="text" id="symbol" placeholder="名称を入力"></div>
         <div class="field"><label>新規 / 既存</label><div class="radio-group"><label><input type="radio" name="new_existing" value="新規"> 新規</label><label><input type="radio" name="new_existing" value="既存"> 既存</label></div></div>
-        <div class="field"><label>又型</label><input type="text" id="fork_type" placeholder="例：V字型、Y字型など"></div>
+        <div class="field"><label>架巣型</label><select id="fork_type"><option value="">選択</option><option>樹幹型</option><option>又型</option><option>その他</option></select></div>
       </div>
       <hr class="divider">
       <div class="nested-section">
@@ -88,8 +88,7 @@
             <div class="field"><label>樹高</label><div class="inline-fields"><input type="number" id="tree_height" placeholder="0" min="0" step="0.1"><span class="unit">m</span></div></div>
             <div class="field"><label>架巣高さ（地上から）</label><div class="inline-fields"><input type="number" id="nest_height" placeholder="0" min="0" step="0.1"><span class="unit">m</span></div></div>
           </div>
-          <div class="grid-3" style="margin-top:14px">
-            <div class="field"><label>架巣高さ（地上1.2m換算）</label><div class="inline-fields"><input type="number" id="nest_height_1_2" placeholder="0" min="0" step="0.1"><span class="unit">cm</span></div></div>
+          <div class="grid-2" style="margin-top:14px">
             <div class="field"><label>巣のサイズ（横×縦）</label><div class="inline-fields"><input type="number" id="nest_width" placeholder="横" min="0" step="1" style="width:80px"><span class="unit">cm ×</span><input type="number" id="nest_depth" placeholder="縦" min="0" step="1" style="width:80px"><span class="unit">cm</span></div></div>
             <div class="field"><label>架巣木の位置</label><input type="text" id="nest_position" placeholder="例：農家の別の後ろ約10m"></div>
           </div>
@@ -140,10 +139,10 @@
   </div>
 
   <div class="section">
-    <div class="section-title">地域区分（地表面の形状・林相）</div>
+    <div class="section-title">営巣環境の状況</div>
     <div class="section-body">
       <div class="field" style="margin-bottom:16px">
-        <label>地表面の形状</label>
+        <label>地形区分</label>
         <div class="radio-group"><label><input type="radio" name="terrain" value="山地"> 山地</label><label><input type="radio" name="terrain" value="丘陵地"> 丘陵地</label><label><input type="radio" name="terrain" value="平地"> 平地</label><label><input type="radio" name="terrain" value="その他"> その他</label></div>
         <input type="text" id="terrain_other" placeholder="その他の地形を入力" style="margin-top:6px">
       </div>
@@ -186,10 +185,8 @@
       Excelに出力
     </button>
   </div>
-
 </div>
 <div class="toast" id="toast"></div>
-
 <script>
   function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
   function getRadio(name) { const c = document.querySelector(`input[name="${name}"]:checked`); return c ? c.value : ''; }
@@ -212,16 +209,16 @@
     const rows = [
       ['猛禽類営巣地(木)確認調査票','','','','株式会社ダイミック'],[''],
       ['【基本情報】'],['業務名称',data.project_name],['調査日',data.survey_date],['天候',data.weather],
-      ['調査者',data.surveyor],['確認者',data.confirmer],['調査メモ',data.survey_memo],[''],
-      ['【確認した巣木の情報】'],['記号 / 番号',data.symbol],['新規 / 既存',data.new_existing],['又型',data.fork_type],[''],
+      ['調査地区',data.survey_area],['確認者',data.confirmer],['調査メモ',data.survey_memo],[''],
+      ['【確認した巣木の情報】'],['名称',data.symbol],['新規 / 既存',data.new_existing],['架巣型',data.fork_type],[''],
       ['--- 営巣木の仕様 ---'],['樹種',data.tree_species],['胸高直径 (cm)',data.dbh],['樹高 (m)',data.tree_height],
-      ['架巣高さ・地上から (m)',data.nest_height],['架巣高さ・地上1.2m換算 (cm)',data.nest_height_1_2],
+      ['架巣高さ・地上から (m)',data.nest_height],
       ['巣のサイズ 横 (cm)',data.nest_width],['巣のサイズ 縦 (cm)',data.nest_depth],['架巣木の位置',data.nest_position],[''],
       ['巣の形状',data.nest_shape+(data.nest_shape_other?' ('+data.nest_shape_other+')':'')],
       ['巣材の状態',data.nest_material],['営巣の状況',data.nest_status],[''],
       ['--- 判定理由 ---'],['種名',data.species_name],['判定理由',data.judgment_reasons],['詳細',data.judgment_detail],[''],
       ['--- 写真確認 ---'],['巣の写真',data.photo_nest],['県・周辺の写真',data.photo_area],['写真メモ',data.photo_memo],[''],
-      ['【地域区分】'],['地表面の形状',data.terrain+(data.terrain_other?' ('+data.terrain_other+')':'')],[''],
+      ['【営巣環境の状況】'],['地形区分',data.terrain+(data.terrain_other?' ('+data.terrain_other+')':'')],[''],
       ['--- 林相 (架巣木中心 半径20m程度) ---'],
       ['高木層 (10.0m以上)',data.layer_high],['亜高木層・低木層 (5〜10m)',data.layer_mid],
       ['草本層 (1〜5m)',data.layer_low],['林床 (1m未満)',data.layer_floor],[''],
@@ -240,17 +237,16 @@
   function collectFormData() {
     return {
       project_name: getVal('project_name'), survey_date: getVal('survey_date'), weather: getVal('weather'),
-      surveyor: getVal('surveyor'), confirmer: getVal('confirmer'), survey_memo: getVal('survey_memo'),
+      survey_area: getVal('survey_area'), confirmer: getVal('confirmer'), survey_memo: getVal('survey_memo'),
       symbol: getVal('symbol'), new_existing: getRadio('new_existing'), fork_type: getVal('fork_type'),
       tree_species: getVal('tree_species'), dbh: getVal('dbh'), tree_height: getVal('tree_height'),
-      nest_height: getVal('nest_height'), nest_height_1_2: getVal('nest_height_1_2'),
-      nest_width: getVal('nest_width'), nest_depth: getVal('nest_depth'), nest_position: getVal('nest_position'),
-      nest_shape: getRadio('nest_shape'), nest_shape_other: getVal('nest_shape_other'),
-      nest_material: getRadio('nest_material'), nest_status: getVal('nest_status'),
-      species_name: getVal('species_name'),
+      nest_height: getVal('nest_height'), nest_width: getVal('nest_width'), nest_depth: getVal('nest_depth'),
+      nest_position: getVal('nest_position'), nest_shape: getRadio('nest_shape'),
+      nest_shape_other: getVal('nest_shape_other'), nest_material: getRadio('nest_material'),
+      nest_status: getVal('nest_status'), species_name: getVal('species_name'),
       judgment_reasons: getCheckboxes(['reason_incubation','reason_entry','reason_food','reason_other_judg']),
-      judgment_detail: getVal('judgment_detail'),
-      photo_nest: getRadio('photo_nest'), photo_area: getRadio('photo_area'), photo_memo: getVal('photo_memo'),
+      judgment_detail: getVal('judgment_detail'), photo_nest: getRadio('photo_nest'),
+      photo_area: getRadio('photo_area'), photo_memo: getVal('photo_memo'),
       terrain: getRadio('terrain'), terrain_other: getVal('terrain_other'),
       layer_high: getVal('layer_high'), layer_mid: getVal('layer_mid'),
       layer_low: getVal('layer_low'), layer_floor: getVal('layer_floor'),
