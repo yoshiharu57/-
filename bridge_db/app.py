@@ -13,7 +13,22 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
-DB_PATH      = Path(__file__).parent / "data" / "bridges.db"
+# Streamlit Cloud は /mount/src/ が読み取り専用のため書き込み可能パスを選択
+def _resolve_db_path() -> Path:
+    candidate = Path(__file__).parent / "data" / "bridges.db"
+    try:
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        _t = candidate.parent / ".write_test"
+        _t.write_text("x", encoding="utf-8")
+        _t.unlink()
+        return candidate
+    except (PermissionError, OSError):
+        p = Path("/tmp") / "bridge_db" / "bridges.db"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
+
+
+DB_PATH      = _resolve_db_path()
 STORAGE_ROOT = Path(__file__).parent / "storage" / "bridges"
 
 PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".webp"}
@@ -549,16 +564,21 @@ def gmaps_url(lat, lon) -> str | None:
 # DB ユーティリティ
 # ──────────────────────────────────────────────────────────
 def _ensure_db():
-    """初回起動時にDBとサンプルデータを自動生成する（Replit等クラウド環境向け）"""
+    """初回起動時にDBとサンプルデータを自動生成する（Streamlit Cloud等クラウド環境向け）"""
     if DB_PATH.exists():
         return
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    # schema.sql を直接読み込んで DB_PATH にDBを作成（_gdd.DB_PATH と混在させない）
+    schema_path = Path(__file__).parent / "schema.sql"
+    with sqlite3.connect(DB_PATH) as _con:
+        _con.executescript(schema_path.read_text(encoding="utf-8"))
+        _con.commit()
+    # ダミーデータ挿入
     scripts_dir = Path(__file__).parent / "scripts"
     sys.path.insert(0, str(scripts_dir))
     import generate_dummy_data as _gdd  # noqa: PLC0415
-    con = _gdd.create_database()
-    _gdd.insert_dummy_data(con)
-    con.close()
+    with sqlite3.connect(DB_PATH) as _con:
+        _gdd.insert_dummy_data(_con)
     # ストレージフォルダも作成
     import init_storage as _is  # noqa: PLC0415
     _is.init_storage()
