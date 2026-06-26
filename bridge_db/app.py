@@ -1868,23 +1868,136 @@ elif page == "🔍 橋梁詳細":
 """, unsafe_allow_html=True)
 
     with tab3:
+        con_rep = get_connection()
+
+        # ── 新規入力ボタン ──────────────────────────────
+        if st.button("➕ 新規入力", key="repair_new_btn"):
+            st.session_state["repair_action"] = (
+                None if st.session_state.get("repair_action") == "new" else "new")
+            st.session_state.pop("repair_edit_id", None)
+
+        # ── 新規入力フォーム ────────────────────────────
+        if st.session_state.get("repair_action") == "new":
+            st.markdown("---")
+            section_header("➕", "補修履歴 新規入力")
+            with st.form("repair_new_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    rn_date       = st.date_input("補修日", key="rn_date")
+                    rn_type       = st.text_input("補修種別", placeholder="例: 床版補修、塗装補修")
+                    rn_desc       = st.text_area("補修内容", height=80)
+                with col2:
+                    rn_contractor = st.text_input("施工業者名")
+                    rn_cost       = st.number_input("費用（千円）", min_value=0, value=0)
+                    rn_warranty   = st.text_input("保証期限", placeholder="例: 2030-03-31")
+                submitted_rn = st.form_submit_button(
+                    "✅ 登録する", type="primary", use_container_width=True)
+            if submitted_rn:
+                if not rn_type:
+                    st.error("補修種別は必須です。")
+                else:
+                    con_rep.execute(
+                        """INSERT INTO repairs
+                           (bridge_id, repair_date, repair_type, description,
+                            contractor_name, cost, warranty_until)
+                           VALUES (?,?,?,?,?,?,?)""",
+                        (bridge_id, str(rn_date), rn_type,
+                         rn_desc or None, rn_contractor or None,
+                         rn_cost if rn_cost else None, rn_warranty or None),
+                    )
+                    con_rep.commit()
+                    st.success("✅ 補修履歴を登録しました。")
+                    st.session_state["repair_action"] = None
+                    st.rerun()
+            st.markdown("---")
+
+        # ── 既存の補修履歴一覧 ──────────────────────────
         df_rep = query_df(
-            """SELECT repair_date, repair_type, description,
+            """SELECT repair_id, repair_date, repair_type, description,
                       contractor_name, cost, warranty_until
                FROM repairs WHERE bridge_id=? ORDER BY repair_date DESC""",
             (bridge_id,),
         )
+
         if df_rep.empty:
-            st.info("補修履歴がありません。")
+            if st.session_state.get("repair_action") != "new":
+                st.info("補修履歴がありません。")
         else:
-            st.dataframe(
-                df_rep.rename(columns={
-                    "repair_date": "補修日", "repair_type": "補修種別",
-                    "description": "内容", "contractor_name": "施工業者",
-                    "cost": "費用(千円)", "warranty_until": "保証期限",
-                }),
-                hide_index=True, use_container_width=True,
-            )
+            # ── 変更フォーム ────────────────────────────
+            if st.session_state.get("repair_action") == "edit":
+                edit_rid = st.session_state.get("repair_edit_id")
+                df_e = df_rep[df_rep["repair_id"] == edit_rid]
+                if not df_e.empty:
+                    e = df_e.iloc[0]
+                    st.markdown("---")
+                    section_header("✏️", "補修履歴 変更")
+                    with st.form("repair_edit_form"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            try:
+                                _ed = pd.to_datetime(e["repair_date"]).date()
+                            except Exception:
+                                import datetime as _dt
+                                _ed = _dt.date.today()
+                            re_date       = st.date_input("補修日", value=_ed, key="re_date")
+                            re_type       = st.text_input("補修種別", value=str(e["repair_type"] or ""))
+                            re_desc       = st.text_area("補修内容", value=str(e["description"] or ""), height=80)
+                        with col2:
+                            re_contractor = st.text_input("施工業者名", value=str(e["contractor_name"] or ""))
+                            re_cost       = st.number_input("費用（千円）", min_value=0,
+                                                            value=int(e["cost"]) if e["cost"] else 0)
+                            re_warranty   = st.text_input("保証期限", value=str(e["warranty_until"] or ""))
+                        submitted_re = st.form_submit_button(
+                            "💾 変更を保存する", type="primary", use_container_width=True)
+                    if submitted_re:
+                        if not re_type:
+                            st.error("補修種別は必須です。")
+                        else:
+                            con_rep.execute(
+                                """UPDATE repairs SET
+                                   repair_date=?, repair_type=?, description=?,
+                                   contractor_name=?, cost=?, warranty_until=?
+                                   WHERE repair_id=?""",
+                                (str(re_date), re_type, re_desc or None,
+                                 re_contractor or None,
+                                 re_cost if re_cost else None,
+                                 re_warranty or None, edit_rid),
+                            )
+                            con_rep.commit()
+                            st.success("✅ 補修履歴を更新しました。")
+                            st.session_state["repair_action"] = None
+                            st.rerun()
+                    st.markdown("---")
+
+            # ── 一覧表示（行ごとに変更・削除ボタン）─────
+            for _, row in df_rep.iterrows():
+                rid = int(row["repair_id"])
+                cost_str = f"{int(row['cost']):,}千円" if row["cost"] else "-"
+                col_info, col_edit, col_del = st.columns([7, 1, 1])
+                with col_info:
+                    st.markdown(f"""
+<div style="padding:0.6rem 0.8rem;background:white;border-radius:8px;
+            border:1px solid #e2e8f0;margin-bottom:0.4rem">
+  <div style="font-size:0.8rem;color:#64748b">
+    {row['repair_date']} ／ {row['repair_type']}
+  </div>
+  <div style="font-size:0.9rem;color:#1e293b">{row['description'] or '-'}</div>
+  <div style="font-size:0.78rem;color:#94a3b8">
+    施工: {row['contractor_name'] or '-'} ／ 費用: {cost_str} ／ 保証期限: {row['warranty_until'] or '-'}
+  </div>
+</div>
+""", unsafe_allow_html=True)
+                with col_edit:
+                    if st.button("✏️", key=f"rep_edit_{rid}", help="変更"):
+                        st.session_state["repair_action"] = "edit"
+                        st.session_state["repair_edit_id"] = rid
+                        st.rerun()
+                with col_del:
+                    if st.button("🗑️", key=f"rep_del_{rid}", help="削除"):
+                        con_rep.execute("DELETE FROM repairs WHERE repair_id=?", (rid,))
+                        con_rep.commit()
+                        st.success("補修記録を削除しました。")
+                        st.rerun()
 
     with tab4:
         _tab_files(bridge_id, bridge_code, photos_dir, forms_dir, drawings_dir)
