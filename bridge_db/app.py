@@ -35,7 +35,7 @@ PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".webp"}
 DOC_EXTS   = {".pdf", ".xlsx", ".xls", ".docx", ".doc", ".csv"}
 PHOTO_TYPES_LIST  = ["全景", "損傷", "補修後", "その他"]
 DOC_TYPES_LIST    = ["点検調書", "損傷図", "補修設計書", "その他"]
-ACCESS_METHOD_LIST = ["橋梁点検車", "リフト車（高所作業車）", "梯子", "目視のみ", "渡り板", "その他"]
+ACCESS_METHOD_LIST = ["地上", "梯子", "橋梁点検車(BT200)", "橋梁点検車(BT400)", "リフト車(高所作業車)", "ドローン"]
 
 # ──────────────────────────────────────────────────────────
 # ページ設定
@@ -482,14 +482,18 @@ def _width_category(w) -> str:
 
 
 def _length_category(l) -> str:
-    """橋長による規模分類"""
+    """橋長分類"""
     if l is None or l == 0:
         return "-"
     l = float(l)
-    if l < 15:  return "小橋"
-    if l < 50:  return "中橋"
-    if l < 100: return "大橋"
-    return "大規模橋"
+    if l <=  5: return "2m以上5m以下"
+    if l <= 10: return "5mを超え10m以下"
+    if l <= 15: return "10mを超え15m以下"
+    if l <= 20: return "15mを超え20m以下"
+    if l <= 30: return "20mを超え30m以下"
+    if l <= 50: return "30mを超え50m以下"
+    if l <= 100: return "50mを超え100m以下"
+    return "100mを超え"
 
 
 def render_bridge_table(df) -> str:
@@ -548,7 +552,7 @@ def render_bridge_table(df) -> str:
     <th>管理番号</th><th>橋梁名</th><th>路線名</th><th>所在地</th>
     <th>地図</th><th>前回点検</th><th>次回点検予定</th>
     <th>健全性</th><th>点検足場</th><th>点検数</th>
-    <th>幅員分類</th><th>規模</th>
+    <th>幅員分類</th><th>橋長分類</th>
   </tr></thead>
   <tbody>{rows_html}</tbody>
 </table></div>"""
@@ -839,7 +843,7 @@ st.sidebar.markdown("""
 
 page = st.sidebar.radio(
     "メニュー",
-    ["📊 ダッシュボード", "📋 橋梁一覧", "➕ 橋梁追加", "✏️ 情報変更", "🗑️ 橋梁削除", "🔍 橋梁詳細", "📋 点検記録入力", "🗺️ 地図"],
+    ["📊 ダッシュボード", "📋 橋梁一覧", "🔍 橋梁詳細", "📋 点検記録入力", "🗺️ 地図"],
     label_visibility="collapsed",
 )
 
@@ -1090,6 +1094,228 @@ if page == "📊 ダッシュボード":
 # ──────────────────────────────────────────────────────────
 elif page == "📋 橋梁一覧":
     page_header("📋 橋梁一覧", "管理橋梁の一覧・検索・地図表示")
+
+    con = get_connection()
+
+    # ── アクションボタン ──────────────────────────────
+    col_b1, col_b2, col_b3, _ = st.columns([2, 2, 2, 4])
+    with col_b1:
+        if st.button("➕ 橋梁追加", use_container_width=True, type="primary"):
+            st.session_state["bridge_action"] = (
+                None if st.session_state.get("bridge_action") == "add" else "add")
+    with col_b2:
+        if st.button("✏️ 情報変更", use_container_width=True):
+            st.session_state["bridge_action"] = (
+                None if st.session_state.get("bridge_action") == "edit" else "edit")
+    with col_b3:
+        if st.button("🗑️ 橋梁削除", use_container_width=True):
+            st.session_state["bridge_action"] = (
+                None if st.session_state.get("bridge_action") == "delete" else "delete")
+
+    bridge_action = st.session_state.get("bridge_action")
+
+    # ── 橋梁追加フォーム ──────────────────────────────
+    if bridge_action == "add":
+        st.markdown("---")
+        section_header("➕", "橋梁追加 — 新しい橋梁をデータベースに登録します")
+        with st.form("form_add"):
+            fields = _bridge_form("add")
+            st.markdown("<br>", unsafe_allow_html=True)
+            submitted_add = st.form_submit_button(
+                "✅ 橋梁を登録する", type="primary", use_container_width=True)
+        if submitted_add:
+            if not fields["bridge_code"] or not fields["bridge_name"]:
+                st.error("管理番号と橋名は必須です。")
+            else:
+                try:
+                    route_id = _upsert_route(con, fields["route_name"], fields["route_type"])
+                    con.execute(
+                        """INSERT INTO bridges
+                           (bridge_code, bridge_name, bridge_name_kana, route_id, manager_name,
+                            location_name, latitude, longitude, built_year,
+                            bridge_length, bridge_width, superstructure_type, substructure_type,
+                            span_count, material, current_health_rank)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                        (fields["bridge_code"], fields["bridge_name"], fields["bridge_name_kana"] or None,
+                         route_id, fields["manager_name"], fields["location_name"] or None,
+                         fields["latitude"], fields["longitude"], fields["built_year"],
+                         fields["bridge_length"], fields["bridge_width"],
+                         fields["superstructure_type"], fields["substructure_type"],
+                         fields["span_count"], fields["material"], fields["current_health_rank"]),
+                    )
+                    con.commit()
+                    bd = STORAGE_ROOT / fields["bridge_code"]
+                    (bd / "photos").mkdir(parents=True, exist_ok=True)
+                    (bd / "forms").mkdir(parents=True, exist_ok=True)
+                    st.success(f"✅ 橋梁「{fields['bridge_name']}（{fields['bridge_code']}）」を登録しました。")
+                    st.balloons()
+                    st.session_state["bridge_action"] = None
+                except Exception as e:
+                    if "UNIQUE constraint" in str(e):
+                        st.error(f"管理番号「{fields['bridge_code']}」は既に使用されています。")
+                    else:
+                        st.error(f"登録に失敗しました: {e}")
+        st.markdown("---")
+
+    # ── 情報変更フォーム ──────────────────────────────
+    elif bridge_action == "edit":
+        st.markdown("---")
+        section_header("✏️", "情報変更 — 橋梁の基本情報を変更します")
+        all_bridges = query_df(
+            "SELECT bridge_code || ' ' || bridge_name AS label, bridge_id "
+            "FROM bridges WHERE is_active=1 ORDER BY bridge_code"
+        )
+        if all_bridges.empty:
+            st.info("橋梁データがありません。")
+        else:
+            edit_label = st.selectbox("変更する橋梁を選択", all_bridges["label"].tolist(),
+                                      key="edit_sel")
+            edit_id = int(all_bridges.loc[all_bridges["label"] == edit_label, "bridge_id"].values[0])
+            df_cur = query_df(
+                """SELECT b.*, r.route_name, r.route_type
+                   FROM bridges b LEFT JOIN routes r ON b.route_id=r.route_id
+                   WHERE b.bridge_id=?""", (edit_id,))
+            if df_cur.empty:
+                st.error("橋梁情報が取得できません。")
+            else:
+                cur = df_cur.iloc[0].to_dict()
+                with st.form("form_edit"):
+                    fields_e = _bridge_form("edit", defaults=cur)
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    submitted_edit = st.form_submit_button(
+                        "💾 変更を保存する", type="primary", use_container_width=True)
+                if submitted_edit:
+                    if not fields_e["bridge_name"]:
+                        st.error("橋名は必須です。")
+                    else:
+                        try:
+                            route_id_e = _upsert_route(con, fields_e["route_name"], fields_e["route_type"])
+                            old_code = cur["bridge_code"]
+                            new_code = fields_e["bridge_code"]
+                            con.execute(
+                                """UPDATE bridges SET
+                                   bridge_code=?, bridge_name=?, bridge_name_kana=?, route_id=?, manager_name=?,
+                                   location_name=?, latitude=?, longitude=?, built_year=?,
+                                   bridge_length=?, bridge_width=?, superstructure_type=?,
+                                   substructure_type=?, span_count=?, material=?,
+                                   current_health_rank=?,
+                                   updated_at=datetime('now','localtime')
+                                   WHERE bridge_id=?""",
+                                (new_code,
+                                 fields_e["bridge_name"], fields_e["bridge_name_kana"] or None,
+                                 route_id_e, fields_e["manager_name"],
+                                 fields_e["location_name"] or None,
+                                 fields_e["latitude"], fields_e["longitude"],
+                                 fields_e["built_year"], fields_e["bridge_length"],
+                                 fields_e["bridge_width"], fields_e["superstructure_type"],
+                                 fields_e["substructure_type"], fields_e["span_count"],
+                                 fields_e["material"], fields_e["current_health_rank"],
+                                 edit_id),
+                            )
+                            con.commit()
+                            if old_code != new_code:
+                                old_dir = STORAGE_ROOT / old_code
+                                new_dir = STORAGE_ROOT / new_code
+                                if old_dir.exists():
+                                    import shutil as _shutil
+                                    _shutil.move(str(old_dir), str(new_dir))
+                            st.success(f"✅「{fields_e['bridge_name']}」の情報を更新しました。")
+                            st.session_state["bridge_action"] = None
+                        except Exception as e:
+                            st.error(f"更新に失敗しました: {e}")
+        st.markdown("---")
+
+    # ── 橋梁削除フォーム ──────────────────────────────
+    elif bridge_action == "delete":
+        st.markdown("---")
+        section_header("🗑️", "橋梁削除 — アーカイブまたは完全削除")
+        all_for_del = query_df(
+            """SELECT b.bridge_code || ' ' || b.bridge_name
+                      || CASE WHEN b.is_active=0 THEN ' [アーカイブ済]' ELSE '' END AS label,
+                      b.bridge_id, b.is_active
+               FROM bridges b ORDER BY b.bridge_code"""
+        )
+        if all_for_del.empty:
+            st.info("橋梁データがありません。")
+        else:
+            del_label = st.selectbox("対象橋梁を選択", all_for_del["label"].tolist(), key="del_sel")
+            row_del   = all_for_del.loc[all_for_del["label"] == del_label].iloc[0]
+            del_id    = int(row_del["bridge_id"])
+            is_active = int(row_del["is_active"])
+
+            df_del = query_df("SELECT * FROM v_bridges_latest WHERE bridge_id=?", (del_id,))
+            if df_del.empty:
+                df_del = query_df(
+                    "SELECT b.bridge_code, b.bridge_name, b.built_year, b.bridge_length "
+                    "FROM bridges b WHERE b.bridge_id=?", (del_id,))
+            b_del = df_del.iloc[0]
+
+            st.markdown(f"""
+<div style="background:white;border-radius:10px;padding:1rem 1.4rem;
+            border-left:5px solid #dc2626;box-shadow:0 1px 4px rgba(0,0,0,0.08);
+            margin-bottom:1rem">
+  <div style="font-size:0.8rem;color:#64748b">{b_del.get('bridge_code','-')}</div>
+  <div style="font-size:1.2rem;font-weight:700;color:#1e293b">{b_del.get('bridge_name','-')}</div>
+  <div style="font-size:0.82rem;color:#64748b;margin-top:0.3rem">
+    架設 {b_del.get('built_year','-')} 年　橋長 {b_del.get('bridge_length','-')} m
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+            insp_cnt = query_df("SELECT COUNT(*) as c FROM inspections WHERE bridge_id=?", (del_id,))["c"].values[0]
+            rep_cnt  = query_df("SELECT COUNT(*) as c FROM repairs      WHERE bridge_id=?", (del_id,))["c"].values[0]
+            ph_cnt   = query_df("SELECT COUNT(*) as c FROM photos        WHERE bridge_id=?", (del_id,))["c"].values[0]
+            doc_cnt  = query_df("SELECT COUNT(*) as c FROM documents     WHERE bridge_id=?", (del_id,))["c"].values[0]
+
+            st.markdown(f"""
+<div style="background:#f8fafc;border-radius:8px;padding:0.8rem 1rem;
+            border:1px solid #e2e8f0;font-size:0.82rem;color:#475569;margin-bottom:1rem">
+  関連データ：点検 {insp_cnt} 件　補修 {rep_cnt} 件　写真 {ph_cnt} 件　帳票 {doc_cnt} 件
+</div>
+""", unsafe_allow_html=True)
+
+            col_arch, col_del = st.columns(2)
+            with col_arch:
+                st.markdown("#### 📦 アーカイブ")
+                st.caption("is_active を 0 にします。データは保持され、一覧から非表示になります。")
+                if is_active == 1:
+                    if st.button("📦 アーカイブする", key="btn_archive", use_container_width=True):
+                        con.execute("UPDATE bridges SET is_active=0, updated_at=datetime('now','localtime') WHERE bridge_id=?", (del_id,))
+                        con.commit()
+                        st.success(f"「{b_del.get('bridge_name')}」をアーカイブしました。")
+                        st.rerun()
+                else:
+                    if st.button("♻️ アーカイブを解除する", key="btn_restore", use_container_width=True):
+                        con.execute("UPDATE bridges SET is_active=1, updated_at=datetime('now','localtime') WHERE bridge_id=?", (del_id,))
+                        con.commit()
+                        st.success(f"「{b_del.get('bridge_name')}」を復元しました。")
+                        st.rerun()
+            with col_del:
+                st.markdown("#### ⛔ 完全削除")
+                st.caption("橋梁と関連する点検・補修・写真・帳票データをすべて削除します。この操作は取り消せません。")
+                confirm = st.text_input(
+                    f"確認のため管理番号「{b_del.get('bridge_code')}」を入力",
+                    key="del_confirm", placeholder="管理番号を入力")
+                del_files = st.checkbox("ストレージフォルダも削除する", key="del_files")
+                if st.button("⛔ 完全削除を実行", key="btn_delete",
+                             use_container_width=True, type="primary"):
+                    if confirm.strip() != str(b_del.get("bridge_code", "")):
+                        st.error("管理番号が一致しません。")
+                    else:
+                        try:
+                            con.execute("DELETE FROM bridges WHERE bridge_id=?", (del_id,))
+                            con.commit()
+                            if del_files:
+                                import shutil as _shutil
+                                bd_path = STORAGE_ROOT / str(b_del.get("bridge_code", ""))
+                                if bd_path.exists():
+                                    _shutil.rmtree(bd_path)
+                            st.success(f"「{b_del.get('bridge_name')}」を完全削除しました。")
+                            st.session_state["bridge_action"] = None
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"削除に失敗しました: {e}")
+        st.markdown("---")
 
     # フィルター
     st.markdown('<div class="filter-bar">', unsafe_allow_html=True)
