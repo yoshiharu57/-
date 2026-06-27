@@ -2038,7 +2038,6 @@ elif page == "📋 点検記録入力":
         st.markdown("<br>", unsafe_allow_html=True)
         section_header("💬", "所見・損傷状況")
         overall = st.text_area("総合所見", height=100)
-        dmg_sub = st.text_area("下部工損傷状況", height=80)
 
         st.markdown("<br>", unsafe_allow_html=True)
         submitted = st.form_submit_button("✅ 点検記録を登録する", type="primary", use_container_width=True)
@@ -2049,12 +2048,12 @@ elif page == "📋 点検記録入力":
                 """INSERT INTO inspections
                    (bridge_id, inspection_date, inspection_type, inspector_name,
                     inspector_org, health_rank, overall_judgment,
-                    damage_superstructure, damage_substructure,
+                    damage_superstructure,
                     countermeasure_type, next_inspection_year, estimated_cost,
                     access_method)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (bridge_id, str(insp_date), insp_type, inspector_name,
-                 inspector_org, health_rank, overall, None, dmg_sub,
+                 inspector_org, health_rank, overall, None,
                  countermeasure, next_year, est_cost, access_method),
             )
             con.execute(
