@@ -3,6 +3,7 @@
 国土交通省「橋梁定期点検要領」準拠
 """
 
+import base64
 import sqlite3
 import shutil
 import sys
@@ -11,6 +12,7 @@ from pathlib import Path
 import folium
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as st_components
 from streamlit_folium import st_folium
 
 # Streamlit Cloud は /mount/src/ が読み取り専用のため書き込み可能パスを選択
@@ -613,6 +615,17 @@ def query_df(sql: str, params=()) -> pd.DataFrame:
 # ──────────────────────────────────────────────────────────
 # ファイル管理ヘルパー
 # ──────────────────────────────────────────────────────────
+def _pdf_viewer(pdf_bytes: bytes, height: int = 750):
+    b64 = base64.b64encode(pdf_bytes).decode()
+    st_components.html(
+        f'<iframe src="data:application/pdf;base64,{b64}" '
+        f'width="100%" height="{height}px" '
+        f'style="border:1px solid #cbd5e1; border-radius:8px;"></iframe>',
+        height=height + 8,
+        scrolling=False,
+    )
+
+
 def _safe_filename(name: str) -> str:
     return Path(name).name.replace("..", "").replace("/", "").replace("\\", "")
 
@@ -734,7 +747,9 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
                 f_path = STORAGE_ROOT / bridge_code / "forms" / row["file_name"]
                 icon = FILE_ICONS.get(Path(row["file_name"]).suffix.lower(), "📎")
                 size_kb = f"{row['file_size'] // 1024} KB" if row["file_size"] else "-"
-                c1, c2 = st.columns([4, 1])
+                is_pdf = Path(row["file_name"]).suffix.lower() == ".pdf"
+                pkey = f"pdf_view_doc_{row['doc_id']}"
+                c1, c2, c3 = st.columns([4, 1, 1])
                 with c1:
                     st.markdown(f"{icon} **{row['file_name']}**　`{row['doc_type'] or '-'}`　{size_kb}　_{row['uploaded_at'] or ''}_")
                     if row["description"]:
@@ -745,14 +760,32 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
                             file_name=row["file_name"], key=f"ddoc_{row['doc_id']}")
                     else:
                         st.caption("⚠なし")
+                with c3:
+                    if is_pdf and f_path.exists():
+                        opened = st.session_state.get(pkey, False)
+                        if st.button("✕ 閉じる" if opened else "👁 表示", key=f"pvbtn_doc_{row['doc_id']}"):
+                            st.session_state[pkey] = not opened
+                            st.rerun()
+                if st.session_state.get(pkey, False) and f_path.exists():
+                    _pdf_viewer(f_path.read_bytes())
                 st.divider()
         elif disk_docs:
             st.caption(f"フォルダ内: {len(disk_docs)}件（DB未登録）")
             for p in disk_docs:
                 icon = FILE_ICONS.get(p.suffix.lower(), "📎")
-                c1, c2 = st.columns([4, 1])
+                is_pdf = p.suffix.lower() == ".pdf"
+                pkey = f"pdf_view_disk_{p.name}"
+                c1, c2, c3 = st.columns([4, 1, 1])
                 c1.markdown(f"{icon} {p.name}")
                 c2.download_button("⬇ DL", p.read_bytes(), file_name=p.name, key=f"ddisk_{p.name}")
+                with c3:
+                    if is_pdf:
+                        opened = st.session_state.get(pkey, False)
+                        if st.button("✕ 閉じる" if opened else "👁 表示", key=f"pvbtn_disk_{p.name}"):
+                            st.session_state[pkey] = not opened
+                            st.rerun()
+                if st.session_state.get(pkey, False):
+                    _pdf_viewer(p.read_bytes())
         else:
             st.info("帳票・調査様式はまだ登録されていません。")
 
@@ -798,7 +831,9 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
             f_path = drawings_dir / row["file_name"]
             icon = FILE_ICONS.get(Path(row["file_name"]).suffix.lower(), "📐")
             size_kb = f"{row['file_size'] // 1024} KB" if row["file_size"] else "-"
-            c1, c2 = st.columns([4, 1])
+            is_pdf = Path(row["file_name"]).suffix.lower() == ".pdf"
+            pkey = f"pdf_view_draw_{row['doc_id']}"
+            c1, c2, c3 = st.columns([4, 1, 1])
             with c1:
                 st.markdown(f"{icon} **{row['file_name']}**　`{row['doc_type'] or '-'}`　{size_kb}　_{row['uploaded_at'] or ''}_")
                 if row["description"]:
@@ -809,14 +844,32 @@ def _tab_files(bridge_id: int, bridge_code: str, photos_dir: Path, forms_dir: Pa
                         file_name=row["file_name"], key=f"ddraw_{row['doc_id']}")
                 else:
                     st.caption("⚠なし")
+            with c3:
+                if is_pdf and f_path.exists():
+                    opened = st.session_state.get(pkey, False)
+                    if st.button("✕ 閉じる" if opened else "👁 表示", key=f"pvbtn_draw_{row['doc_id']}"):
+                        st.session_state[pkey] = not opened
+                        st.rerun()
+            if st.session_state.get(pkey, False) and f_path.exists():
+                _pdf_viewer(f_path.read_bytes())
             st.divider()
     elif disk_draws:
         st.caption(f"フォルダ内: {len(disk_draws)}件（DB未登録）")
         for p in disk_draws:
             icon = FILE_ICONS.get(p.suffix.lower(), "📐")
-            c1, c2 = st.columns([4, 1])
+            is_pdf = p.suffix.lower() == ".pdf"
+            pkey = f"pdf_view_drawdisk_{p.name}"
+            c1, c2, c3 = st.columns([4, 1, 1])
             c1.markdown(f"{icon} {p.name}")
             c2.download_button("⬇ DL", p.read_bytes(), file_name=p.name, key=f"ddrawdisk_{p.name}")
+            with c3:
+                if is_pdf:
+                    opened = st.session_state.get(pkey, False)
+                    if st.button("✕ 閉じる" if opened else "👁 表示", key=f"pvbtn_drawdisk_{p.name}"):
+                        st.session_state[pkey] = not opened
+                        st.rerun()
+            if st.session_state.get(pkey, False):
+                _pdf_viewer(p.read_bytes())
     else:
         st.info("一般図・図面はまだ登録されていません。")
 
