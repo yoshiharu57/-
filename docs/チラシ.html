@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>橋梁管理システム 販促チラシ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: #e2e8f0;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* A4 用紙 */
+  .flyer {
+    width: 210mm;
+    min-height: 297mm;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media print {
+    body { background: none; padding: 0; }
+    .flyer { width: 210mm; min-height: 297mm; box-shadow: none; }
+    @page { size: A4; margin: 0; }
+  }
+
+  /* ── ヘッダー ── */
+  .header {
+    background: linear-gradient(135deg, #0f2340 0%, #1e4d8c 60%, #1a6bb5 100%);
+    padding: 32px 36px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    right: -40px; top: -60px;
+    width: 300px; height: 300px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    right: 60px; bottom: -80px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .header-icon {
+    font-size: 3.2rem;
+    line-height: 1;
+  }
+  .header-tag {
+    display: inline-block;
+    background: #f59e0b;
+    color: #1c1917;
+    font-size: 0.7rem;
+    font-weight: 900;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .header-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+  .header-subtitle {
+    font-size: 0.85rem;
+    color: #93c5fd;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+  .header-catch {
+    font-size: 1.05rem;
+    color: #e0f2fe;
+    font-weight: 500;
+    line-height: 1.7;
+    border-left: 3px solid #f59e0b;
+    padding-left: 14px;
+    margin-top: 4px;
+  }
+
+  /* ── 本文エリア ── */
+  .body { padding: 24px 36px; }
+
+  /* ── 課題セクション ── */
+  .problem-section {
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .problem-title {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #b91c1c;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .problem-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 20px;
+  }
+  .problem-item {
+    font-size: 0.82rem;
+    color: #7f1d1d;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .problem-item::before {
+    content: '❌';
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── 矢印 ── */
+  .arrow {
+    text-align: center;
+    font-size: 1.5rem;
+    color: #2563eb;
+    margin: 6px 0;
+    font-weight: 900;
+  }
+
+  /* ── 解決セクション ── */
+  .solution-title {
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #1e3a5f;
+    margin-bottom: 14px;
+    padding: 10px;
+    background: linear-gradient(90deg, #eff6ff, #dbeafe, #eff6ff);
+    border-radius: 6px;
+  }
+
+  /* ── 機能カード ── */
+  .features {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .feat-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+    background: #f8fafc;
+    position: relative;
+    overflow: hidden;
+  }
+  .feat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb, #0ea5e9);
+  }
+  .feat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .feat-name { font-size: 0.8rem; font-weight: 900; color: #1e3a5f; margin-bottom: 4px; }
+  .feat-desc { font-size: 0.72rem; color: #64748b; line-height: 1.5; }
+
+  /* ── ランク説明 ── */
+  .rank-section {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+  }
+  .rank-title {
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: #0369a1;
+    margin-bottom: 10px;
+  }
+  .rank-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .rank-item {
+    text-align: center;
+    padding: 8px 4px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+  }
+  .rank-I   { background: #dcfce7; }
+  .rank-II  { background: #fef9c3; }
+  .rank-III { background: #ffedd5; }
+  .rank-IV  { background: #fee2e2; }
+  .rank-badge {
+    display: inline-block;
+    font-size: 1rem;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+  .rank-I .rank-badge   { color: #15803d; }
+  .rank-II .rank-badge  { color: #a16207; }
+  .rank-III .rank-badge { color: #c2410c; }
+  .rank-IV .rank-badge  { color: #b91c1c; }
+  .rank-label { font-weight: 700; font-size: 0.73rem; display: block; margin-bottom: 2px; }
+  .rank-desc  { color: #475569; font-size: 0.68rem; }
+
+  /* ── ポイント ── */
+  .points {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .point-card {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .point-num {
+    min-width: 26px;
+    height: 26px;
+    background: #f59e0b;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .point-text .pt-title { font-size: 0.82rem; font-weight: 900; color: #1c1917; margin-bottom: 2px; }
+  .point-text .pt-desc  { font-size: 0.72rem; color: #57534e; line-height: 1.5; }
+
+  /* ── フッター ── */
+  .footer {
+    margin-top: 10px;
+    background: linear-gradient(135deg, #0f2340 0%, #1e3a5f 100%);
+    padding: 20px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .footer-left .fl-label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 4px; }
+  .footer-left .fl-url   { font-size: 0.78rem; color: #60a5fa; font-family: monospace; }
+  .footer-left .fl-demo  { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; }
+  .footer-right {
+    text-align: right;
+  }
+  .footer-right .fr-free {
+    display: inline-block;
+    background: #f59e0b;
+    color: #1c1917;
+    font-size: 0.72rem;
+    font-weight: 900;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+  }
+  .footer-right .fr-note { font-size: 0.68rem; color: #94a3b8; line-height: 1.6; }
+
+  /* ── 区切り見出し ── */
+  .sec-head {
+    font-size: 0.88rem;
+    font-weight: 900;
+    color: #1e3a5f;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .contact-box {
+    background: #f8fafc;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 0.78rem;
+    color: #475569;
+    line-height: 1.9;
+  }
+  .contact-box strong { color: #1e3a5f; }
+</style>
+</head>
+<body>
+<div class="flyer">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="header-top">
+      <div class="header-icon">🌉</div>
+      <div>
+        <div class="header-tag">自治体向け Webシステム</div>
+        <div class="header-title">橋梁管理システム</div>
+        <div class="header-subtitle">Bridge Inspection &amp; Ledger Management System</div>
+      </div>
+    </div>
+    <div class="header-catch">
+      紙の台帳・バラバラなExcelを卒業。<br>
+      橋梁の点検記録・補修履歴・書類をブラウザひとつで一元管理。
+    </div>
+  </div>
+
+  <!-- 本文 -->
+  <div class="body">
+
+    <!-- 課題 -->
+    <div class="problem-section">
+      <div class="problem-title">🗂️ こんなお悩みはありませんか？</div>
+      <div class="problem-list">
+        <div class="problem-item">台帳がExcelや紙でバラバラ</div>
+        <div class="problem-item">点検記録を探すのに時間がかかる</div>
+        <div class="problem-item">どの橋が危険か一覧で把握できない</div>
+        <div class="problem-item">点検調書（PDF）の保管場所が分からない</div>
+        <div class="problem-item">補修費用や履歴の集計が手間</div>
+        <div class="problem-item">異動のたびに引き継ぎが大変</div>
+      </div>
+    </div>
+
+    <div class="arrow">▼　このシステムで解決します　▼</div>
+
+    <div class="solution-title">
+      🌐 インターネットブラウザから、いつでもどこでもアクセスできる<br>
+      「橋梁管理のデジタル台帳」です
+    </div>
+
+    <!-- 機能カード -->
+    <div class="sec-head">✨ 主な機能</div>
+    <div class="features">
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-name">ダッシュボード</div>
+        <div class="feat-desc">管理橋梁数・危険橋梁数を<br>ひと目で把握</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📋</div>
+        <div class="feat-name">橋梁台帳</div>
+        <div class="feat-desc">橋長・幅員・構造形式など<br>基本情報を一元管理</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-name">橋梁詳細</div>
+        <div class="feat-desc">1橋ごとの点検・補修・<br>書類をタブで確認</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📝</div>
+        <div class="feat-name">点検記録入力</div>
+        <div class="feat-desc">健全性ランク・措置区分・<br>所見をフォームで登録</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔧</div>
+        <div class="feat-name">補修履歴管理</div>
+        <div class="feat-desc">工事内容・費用・業者名<br>保証期限を記録・編集</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🗺️</div>
+        <div class="feat-name">地図表示</div>
+        <div class="feat-desc">全橋梁の位置を<br>インタラクティブ地図で確認</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📄</div>
+        <div class="feat-name">PDF表示</div>
+        <div class="feat-desc">点検調書PDFをブラウザ内で<br>直接プレビュー・保存</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📷</div>
+        <div class="feat-name">写真管理</div>
+        <div class="feat-desc">橋梁写真・損傷写真を<br>アップロードして保管</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📐</div>
+        <div class="feat-name">図面管理</div>
+        <div class="feat-desc">一般図・設計図面を<br>ファイルで保管・閲覧</div>
+      </div>
+    </div>
+
+    <!-- ランク -->
+    <div class="rank-section">
+      <div class="rank-title">📌 国土交通省「橋梁定期点検要領」準拠の健全性ランク管理</div>
+      <div class="rank-list">
+        <div class="rank-item rank-I">
+          <div class="rank-badge">ランク I</div>
+          <span class="rank-label">健全</span>
+          <span class="rank-desc">損傷なし〜軽微</span>
+        </div>
+        <div class="rank-item rank-II">
+          <div class="rank-badge">ランク II</div>
+          <span class="rank-label">予防保全段階</span>
+          <span class="rank-desc">将来の劣化を予防</span>
+        </div>
+        <div class="rank-item rank-III">
+          <div class="rank-badge">ランク III</div>
+          <span class="rank-label">早期措置段階</span>
+          <span class="rank-desc">早めに補修が必要</span>
+        </div>
+        <div class="rank-item rank-IV">
+          <div class="rank-badge">ランク IV</div>
+          <span class="rank-label">緊急措置段階</span>
+          <span class="rank-desc">即時対応が必要</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- セールスポイント -->
+    <div class="sec-head">🏆 選ばれる4つの理由</div>
+    <div class="points">
+      <div class="point-card">
+        <div class="point-num">1</div>
+        <div class="point-text">
+          <div class="pt-title">インストール不要・ブラウザのみ</div>
+          <div class="pt-desc">専用ソフト不要。ChromeやEdgeがあればすぐ使えます。職場・自宅・現場どこからでもアクセス可能。</div>
+        </div>
+      </div>
+      <div class="point-card">
+        <div class="point-num">2</div>
+        <div class="point-text">
+          <div class="pt-title">国交省基準に完全準拠</div>
+          <div class="pt-desc">健全性ランク（I〜IV）・措置区分（A〜E）・橋長分類など、定期点検要領の区分をそのまま使えます。</div>
+        </div>
+      </div>
+      <div class="point-card">
+        <div class="point-num">3</div>
+        <div class="point-text">
+          <div class="pt-title">書類・写真も一括管理</div>
+          <div class="pt-desc">点検調書PDF・写真・設計図面を橋梁ごとに紐付けて保管。調書はブラウザ内でプレビュー可能。</div>
+        </div>
+      </div>
+      <div class="point-card">
+        <div class="point-num">4</div>
+        <div class="point-text">
+          <div class="pt-title">担当者が変わっても安心</div>
+          <div class="pt-desc">全記録がデータベースに蓄積されるため、人事異動があっても引き継ぎが簡単。過去の点検履歴も即検索。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- お問い合わせ -->
+    <div class="sec-head">📞 お問い合わせ・デモのご依頼</div>
+    <div class="contact-box">
+      <strong>デモサイト（橋梁台帳）：</strong> https://yoshiharu57.github.io/-/ledger/<br>
+      <strong>システムURL：</strong> https://e2j4hnwswmmt4gqrzsbbdc.streamlit.app/<br>
+      <br>
+      ご担当者名：&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<strong>TEL：</strong>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<strong>Mail：</strong>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- フッター -->
+  <div class="footer">
+    <div class="footer-left">
+      <div class="fl-label">🌐 システムURL</div>
+      <div class="fl-url">https://e2j4hnwswmmt4gqrzsbbdc.streamlit.app/</div>
+      <div class="fl-demo">デモ：https://yoshiharu57.github.io/-/ledger/</div>
+    </div>
+    <div class="footer-right">
+      <div class="fr-free">📋 国土交通省 橋梁定期点検要領 準拠</div><br>
+      <div class="fr-note">
+        対応ブラウザ：Google Chrome / Microsoft Edge（最新版）<br>
+        推奨環境：PC・タブレット（1280px以上）
+      </div>
+    </div>
+  </div>
+
+</div><!-- /flyer -->
+</body>
+</html>

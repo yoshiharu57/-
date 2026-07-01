@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>橋梁管理システム 操作説明書</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; font-size: 10.5pt; color: #1e293b; background: #fff; line-height: 1.8; }
+
+  /* 表紙 */
+  .cover { page-break-after: always; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(160deg, #0f4c81 0%, #0a3260 100%); color: #fff; text-align: center; padding: 3rem; }
+  .cover-icon { font-size: 5rem; margin-bottom: 1rem; }
+  .cover-tag { font-size: 0.85rem; background: #2563eb; padding: 4px 14px; border-radius: 20px; margin-bottom: 1rem; letter-spacing: 0.1em; }
+  .cover-title { font-size: 2.2rem; font-weight: 900; margin-bottom: 0.5rem; }
+  .cover-subtitle { font-size: 1rem; color: #93c5fd; margin-bottom: 2.5rem; }
+  .cover-url { background: rgba(255,255,255,0.1); padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.85rem; color: #bfdbfe; margin-bottom: 2rem; }
+  .cover-meta { font-size: 0.85rem; color: #93c5fd; }
+
+  /* 目次 */
+  .toc { page-break-after: always; padding: 2cm 2.5cm; max-width: 210mm; margin: 0 auto; }
+  .toc h1 { font-size: 1.6rem; font-weight: 900; color: #0f4c81; margin-bottom: 1.5rem; }
+  .toc-item { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px dotted #cbd5e1; }
+  .toc-num { font-size: 1.2rem; font-weight: 900; color: #2563eb; min-width: 2rem; }
+  .toc-text { font-size: 1rem; font-weight: 700; }
+  .toc-sub { font-size: 0.85rem; color: #64748b; padding: 0.2rem 0 0.2rem 2.5rem; }
+
+  /* ページ */
+  .page { padding: 1.5cm 2.5cm; max-width: 210mm; margin: 0 auto; }
+  @media print {
+    .page { padding: 1.2cm 2cm; }
+    .cover { min-height: 100vh; }
+  }
+
+  /* 見出し */
+  h1 { font-size: 1.4rem; font-weight: 900; color: #fff; background: linear-gradient(90deg, #0f4c81, #1e6eb5); padding: 0.6rem 1rem; border-radius: 6px; margin: 2rem 0 1rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; color: #0f4c81; border-left: 4px solid #2563eb; padding-left: 0.7rem; margin: 1.8rem 0 0.8rem; }
+  h3 { font-size: 1rem; font-weight: 700; color: #334155; margin: 1.2rem 0 0.5rem; background: #f1f5f9; padding: 0.3rem 0.6rem; border-radius: 4px; }
+  p { margin-bottom: 0.7rem; }
+
+  /* ステップボックス */
+  .steps { counter-reset: step; }
+  .step { display: flex; gap: 1rem; margin-bottom: 1.2rem; align-items: flex-start; }
+  .step-num { counter-increment: step; content: counter(step); min-width: 2rem; height: 2rem; background: #2563eb; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.9rem; flex-shrink: 0; }
+  .step-body { flex: 1; }
+  .step-title { font-weight: 700; margin-bottom: 0.3rem; }
+
+  /* ポイントボックス */
+  .point { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.7rem 1rem; border-radius: 0 6px 6px 0; margin: 0.8rem 0; }
+  .point-title { font-weight: 700; color: #1d4ed8; margin-bottom: 0.2rem; font-size: 0.9rem; }
+  .warn { background: #fefce8; border-left: 4px solid #eab308; }
+  .warn .point-title { color: #854d0e; }
+  .tip { background: #f0fdf4; border-left: 4px solid #16a34a; }
+  .tip .point-title { color: #15803d; }
+
+  /* バッジ */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8.5pt; font-weight: 700; }
+  .badge-I   { background: #dcfce7; color: #15803d; }
+  .badge-II  { background: #fef9c3; color: #a16207; }
+  .badge-III { background: #ffedd5; color: #c2410c; }
+  .badge-IV  { background: #fee2e2; color: #b91c1c; }
+
+  /* テーブル */
+  table { width: 100%; border-collapse: collapse; margin: 0.7rem 0 1.2rem; font-size: 9.5pt; }
+  th { background: #0f4c81; color: #fff; padding: 6px 10px; text-align: left; font-weight: 600; }
+  td { padding: 5px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.6rem; }
+  li { margin-bottom: 0.3rem; }
+
+  .icon-label { display: inline-flex; align-items: center; gap: 0.4rem; background: #1e3a5f; color: #fff; padding: 3px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; }
+
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }
+  .page-break { page-break-before: always; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 9pt; }
+
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 0.8rem 0; }
+  .menu-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.8rem; }
+  .menu-card .icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+  .menu-card .name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .menu-card .desc { font-size: 0.85rem; color: #64748b; }
+</style>
+</head>
+<body>
+
+<!-- 表紙 -->
+<div class="cover">
+  <div class="cover-icon">🌉</div>
+  <div class="cover-tag">初めての方へ</div>
+  <div class="cover-title">橋梁管理システム</div>
+  <div class="cover-subtitle">操作説明書（やさしい版）</div>
+  <div class="cover-url">https://e2j4hnwswmmt4gqrzsbbdc.streamlit.app/</div>
+  <div class="cover-meta">作成日：2026年7月　準拠：国土交通省 橋梁定期点検要領</div>
+</div>
+
+<!-- 目次 -->
+<div class="toc">
+  <h1>目 次</h1>
+  <div class="toc-item"><span class="toc-num">1</span><span class="toc-text">このシステムでできること</span></div>
+  <div class="toc-item"><span class="toc-num">2</span><span class="toc-text">画面の見かた（基本操作）</span></div>
+  <div class="toc-item"><span class="toc-num">3</span><span class="toc-text">ダッシュボード — 橋梁の現状を一目で確認</span></div>
+  <div class="toc-item"><span class="toc-num">4</span><span class="toc-text">橋梁一覧 — 橋梁の検索・追加・変更・削除</span></div>
+  <div class="toc-item"><span class="toc-num">5</span><span class="toc-text">橋梁詳細 — 1本の橋梁の詳細情報</span></div>
+  <div class="toc-item"><span class="toc-num">6</span><span class="toc-text">点検記録入力 — 点検結果を登録する</span></div>
+  <div class="toc-item"><span class="toc-num">7</span><span class="toc-text">地図 — 橋梁の位置を地図で確認</span></div>
+  <div class="toc-item"><span class="toc-num">8</span><span class="toc-text">健全性ランクの見かた</span></div>
+  <div class="toc-item"><span class="toc-num">9</span><span class="toc-text">よくある質問（Q&amp;A）</span></div>
+</div>
+
+<!-- 本文 -->
+<div class="page">
+
+<h1>1. このシステムでできること</h1>
+
+<p>橋梁管理システムは、<strong>町が管理する橋梁の情報をパソコンで一元管理する</strong>ためのシステムです。紙の台帳やExcelファイルに代わり、Webブラウザから誰でも簡単に情報を確認・入力できます。</p>
+
+<div class="menu-grid">
+  <div class="menu-card">
+    <div class="icon">📊</div>
+    <div class="name">現状をひと目で把握</div>
+    <div class="desc">危険な橋梁・点検が必要な橋梁をすぐに確認できます</div>
+  </div>
+  <div class="menu-card">
+    <div class="icon">📋</div>
+    <div class="name">橋梁台帳の管理</div>
+    <div class="desc">橋梁の基本情報（長さ・幅・構造など）を登録・更新できます</div>
+  </div>
+  <div class="menu-card">
+    <div class="icon">📝</div>
+    <div class="name">点検記録の入力</div>
+    <div class="desc">点検結果・健全性ランク・所見を記録として保存できます</div>
+  </div>
+  <div class="menu-card">
+    <div class="icon">📄</div>
+    <div class="name">書類ファイルの管理</div>
+    <div class="desc">点検調書（PDF）・写真・図面をアップロードして保存できます</div>
+  </div>
+  <div class="menu-card">
+    <div class="icon">🗺️</div>
+    <div class="name">地図で位置を確認</div>
+    <div class="desc">橋梁の場所を地図上で視覚的に確認できます</div>
+  </div>
+  <div class="menu-card">
+    <div class="icon">🔧</div>
+    <div class="name">補修履歴の管理</div>
+    <div class="desc">補修工事の内容・費用・業者名を記録できます</div>
+  </div>
+</div>
+
+<div class="point tip">
+  <div class="point-title">✅ インストール不要</div>
+  インターネットに接続したパソコン（またはタブレット）のブラウザから、いつでもどこでもアクセスできます。専用ソフトのインストールは必要ありません。
+</div>
+
+<div class="page-break"></div>
+
+<h1>2. 画面の見かた（基本操作）</h1>
+
+<h2>アクセス方法</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num" style="content:'1'; display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">1</div>
+    <div class="step-body">
+      <div class="step-title">ブラウザを開く</div>
+      Google Chrome または Microsoft Edge を開いてください。
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">2</div>
+    <div class="step-body">
+      <div class="step-title">URLを入力する</div>
+      アドレスバーに以下を入力して Enter キーを押してください。<br>
+      <code>https://e2j4hnwswmmt4gqrzsbbdc.streamlit.app/</code>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">3</div>
+    <div class="step-body">
+      <div class="step-title">画面が表示される</div>
+      ダッシュボード画面が表示されます。左側にメニューが表示されます。
+    </div>
+  </div>
+</div>
+
+<div class="point warn">
+  <div class="point-title">⚠️ 画面が「起動中」と表示された場合</div>
+  しばらく使われていないとシステムが自動的に休止状態になります。「Wake up」または「起動中...」という表示が出たら、そのまま30秒〜1分ほどお待ちください。自動で起動します。
+</div>
+
+<h2>画面の構成</h2>
+
+<table>
+  <tr><th>場所</th><th>名称</th><th>使い方</th></tr>
+  <tr><td>画面の左側</td><td>メニュー（サイドバー）</td><td>見たいページをクリックして切り替えます</td></tr>
+  <tr><td>画面の右側（広いエリア）</td><td>メインコンテンツ</td><td>情報の確認・入力を行うエリアです</td></tr>
+</table>
+
+<h2>メニュー一覧</h2>
+<table>
+  <tr><th>メニュー名</th><th>できること</th></tr>
+  <tr><td>📊 ダッシュボード</td><td>橋梁の現状を一覧で確認する（トップページ）</td></tr>
+  <tr><td>📋 橋梁一覧</td><td>全橋梁を検索・絞り込みする。橋梁の追加・変更・削除</td></tr>
+  <tr><td>🔍 橋梁詳細</td><td>1本の橋梁の詳細情報・点検履歴・補修履歴・ファイルを確認</td></tr>
+  <tr><td>📋 点検記録入力</td><td>点検結果を入力・保存する</td></tr>
+  <tr><td>🗺️ 地図</td><td>橋梁の位置を地図で確認する</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h1>3. ダッシュボード</h1>
+
+<p>システムを開いたとき最初に表示されるページです。管理している橋梁の「今の状態」をひと目で確認できます。</p>
+
+<h2>表示される情報</h2>
+
+<h3>集計カード（上部4枠）</h3>
+<table>
+  <tr><th>カード</th><th>内容</th></tr>
+  <tr><td>🌉 管理橋梁数</td><td>現在システムに登録されている橋梁の総数</td></tr>
+  <tr><td>✅ 健全（ランクI）</td><td>最も状態の良い橋梁の数</td></tr>
+  <tr><td>⚠️ 要注意（ランクII）</td><td>予防的な対応が望ましい橋梁の数</td></tr>
+  <tr><td>🚨 要対応（ランクIII+IV）</td><td>早期または緊急の対応が必要な橋梁の数</td></tr>
+</table>
+
+<h3>⚠️ 緊急・早期措置が必要な橋梁</h3>
+<p>ランクIII（早期措置段階）とランクIV（緊急措置段階）の橋梁がカード形式で一覧表示されます。優先的に対応が必要な橋梁です。</p>
+
+<h3>📋 直近の点検記録</h3>
+<p>最近10件の点検記録が新しい順に表示されます。</p>
+
+<div class="point tip">
+  <div class="point-title">💡 活用のヒント</div>
+  毎朝ダッシュボードを確認するだけで、緊急対応が必要な橋梁を見落とさず管理できます。
+</div>
+
+<div class="page-break"></div>
+
+<h1>4. 橋梁一覧</h1>
+
+<h2>橋梁を検索・絞り込みする</h2>
+
+<p>ページ上部にフィルター（絞り込み）バーがあります。条件を選ぶと一覧が自動的に絞り込まれます。</p>
+
+<table>
+  <tr><th>フィルター名</th><th>内容</th></tr>
+  <tr><td>健全性ランク</td><td>I / II / III / IV で絞り込む</td></tr>
+  <tr><td>路線</td><td>特定の路線だけを表示する</td></tr>
+  <tr><td>材料</td><td>RC・PC・鋼・石などで絞り込む</td></tr>
+  <tr><td>橋長分類</td><td>橋の長さの区分で絞り込む</td></tr>
+</table>
+
+<h2>橋梁を新しく登録する（橋梁追加）</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">1</div>
+    <div class="step-body">
+      <div class="step-title">「➕ 橋梁追加」ボタンをクリック</div>
+      一覧ページ上部のボタンをクリックします。入力フォームが表示されます。
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">2</div>
+    <div class="step-body">
+      <div class="step-title">情報を入力する</div>
+      管理番号・橋名・路線・所在地・緯度経度・橋長・幅員・構造形式などを入力します。<br>
+      <strong>★マーク（＊）の項目は必須入力</strong>です。
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">3</div>
+    <div class="step-body">
+      <div class="step-title">「登録する」ボタンをクリック</div>
+      緑色の「登録する」ボタンをクリックすると登録完了です。
+    </div>
+  </div>
+</div>
+
+<h2>橋梁情報を変更する</h2>
+<ol>
+  <li>「✏️ 情報変更」ボタンをクリック</li>
+  <li>変更したい橋梁を選んで情報を修正</li>
+  <li>「変更を保存」ボタンをクリック</li>
+</ol>
+
+<h2>橋梁を削除する</h2>
+<ol>
+  <li>「🗑️ 橋梁削除」ボタンをクリック</li>
+  <li>削除したい橋梁を選ぶ</li>
+  <li><strong>アーカイブ（廃橋扱い）</strong>または<strong>完全削除</strong>を選ぶ<br>
+      ※通常は「アーカイブ」を推奨します（データを残しながら一覧から非表示）</li>
+</ol>
+
+<div class="point warn">
+  <div class="point-title">⚠️ 完全削除に注意</div>
+  「完全削除」を選ぶと、その橋梁に関連する点検記録・補修記録・ファイルも すべて削除され、元に戻せません。必ずアーカイブを先にご検討ください。
+</div>
+
+<div class="page-break"></div>
+
+<h1>5. 橋梁詳細</h1>
+
+<p>1本の橋梁について詳しく確認・編集するページです。ページ上部のプルダウンから橋梁を選ぶと表示されます。</p>
+
+<h2>タブの切り替え</h2>
+<p>4つのタブで情報が分かれています。タブをクリックして切り替えます。</p>
+
+<h3>📌 基本情報タブ</h3>
+<p>橋梁の基本的な諸元（スペック）が表示されます。</p>
+<table>
+  <tr><th>表示される情報</th></tr>
+  <tr><td>管理番号、橋名、路線名、所在地</td></tr>
+  <tr><td>緯度・経度（Google マップリンクあり）</td></tr>
+  <tr><td>架設年、橋長（m）、幅員（m）、橋長分類、幅員分類</td></tr>
+  <tr><td>上部工形式、下部工形式、径間数、主要材料</td></tr>
+  <tr><td>現況健全性ランク、管理者名</td></tr>
+</table>
+
+<h3>📋 点検履歴タブ</h3>
+<p>これまでに実施した点検記録が新しい順に一覧表示されます。点検日・点検者・健全性ランク・措置区分・所見が確認できます。</p>
+
+<h3>🔧 補修履歴タブ</h3>
+<p>補修・補強工事の記録を管理します。</p>
+<table>
+  <tr><th>操作</th><th>方法</th></tr>
+  <tr><td>記録を追加</td><td>「➕ 新規入力」ボタンをクリックして入力</td></tr>
+  <tr><td>記録を変更</td><td>各記録行の「✏️」ボタンをクリック</td></tr>
+  <tr><td>記録を削除</td><td>各記録行の「🗑️」ボタンをクリック</td></tr>
+</table>
+
+<p>入力できる情報：補修日・補修種別・補修内容・施工業者名・費用（千円）・保証期限</p>
+
+<h3>📁 ファイル管理タブ</h3>
+<p>橋梁に関連するファイルを管理します。</p>
+
+<table>
+  <tr><th>セクション</th><th>内容</th><th>対応ファイル</th></tr>
+  <tr><td>📷 写真データ</td><td>橋梁の写真を管理</td><td>JPG / PNG / WEBP</td></tr>
+  <tr><td>📄 調査様式・帳票</td><td>点検調書などを管理</td><td>PDF / Excel / Word</td></tr>
+  <tr><td>📐 一般図・図面</td><td>橋梁の設計図などを管理</td><td>PDF / JPG / PNG</td></tr>
+</table>
+
+<h3>PDFを画面内で表示する方法</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">1</div>
+    <div class="step-body">「調査様式・帳票」または「一般図・図面」のセクションを開く</div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">2</div>
+    <div class="step-body">PDFファイルの右側にある「<strong>👁 表示</strong>」ボタンをクリック</div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">3</div>
+    <div class="step-body">画面内にPDFがインライン表示されます。「✕ 閉じる」で非表示になります</div>
+  </div>
+</div>
+
+<div class="point tip">
+  <div class="point-title">💡 ファイルのダウンロード</div>
+  「👁 表示」の隣にある「⬇ DL」ボタンをクリックすると、ファイルをパソコンにダウンロードできます。
+</div>
+
+<h3>ファイルをアップロードする方法</h3>
+<ol>
+  <li>「＋ ファイルを追加」または「＋ 写真を追加」をクリックして展開</li>
+  <li>「Browse files」をクリックしてファイルを選択（またはドラッグ＆ドロップ）</li>
+  <li>種別・説明を入力して「保存」ボタンをクリック</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h1>6. 点検記録入力</h1>
+
+<p>点検を実施した後、結果を入力して保存するページです。</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">1</div>
+    <div class="step-body">
+      <div class="step-title">対象橋梁を選ぶ</div>
+      ページ上部のプルダウンから点検した橋梁を選択します。
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">2</div>
+    <div class="step-body">
+      <div class="step-title">点検基本情報を入力する</div>
+      <table style="margin-top:0.5rem;">
+        <tr><th>項目</th><th>入力内容</th></tr>
+        <tr><td>点検年月日</td><td>点検を実施した日付</td></tr>
+        <tr><td>点検種別</td><td>定期 / 緊急 / 初回 から選ぶ</td></tr>
+        <tr><td>健全性ランク</td><td>I / II / III / IV から選ぶ（下の表を参照）</td></tr>
+        <tr><td>措置区分</td><td>A〜E から選ぶ</td></tr>
+        <tr><td>点検足場</td><td>地上・梯子・橋梁点検車(BT200/BT400)・リフト車・ドローン から選ぶ</td></tr>
+        <tr><td>点検者氏名</td><td>点検を実施した方のお名前</td></tr>
+        <tr><td>点検機関名</td><td>委託先の会社名（直営の場合は役場の担当課名）</td></tr>
+        <tr><td>次回点検推奨年</td><td>次回点検を推奨する年（西暦）</td></tr>
+        <tr><td>補修概算費用</td><td>必要な補修費用の概算（千円単位）</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">3</div>
+    <div class="step-body">
+      <div class="step-title">総合所見を入力する</div>
+      点検で気づいたこと・損傷状況・所見を自由に入力します。
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">4</div>
+    <div class="step-body">
+      <div class="step-title">「✅ 点検記録を登録する」ボタンをクリック</div>
+      登録が完了すると「✅ 点検記録を登録しました」とメッセージが表示されます。<br>
+      <strong>橋梁の健全性ランクも自動的に更新</strong>されます。
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num" style="display:flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; background:#2563eb; color:#fff; border-radius:50%; font-weight:900;">5</div>
+    <div class="step-body">
+      <div class="step-title">（任意）点検調書ファイルを添付する</div>
+      登録直後に点検調書（PDF・Excelなど）を添付してアップロードできます。「📤 点検調書を保存」ボタンをクリックしてファイルを保存します。
+    </div>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<h1>7. 地図</h1>
+
+<p>登録されている全橋梁の位置を地図上で確認できます。</p>
+
+<ul>
+  <li>地図上のアイコンをクリックすると、橋梁名・管理番号・健全性ランクがポップアップ表示されます</li>
+  <li>アイコンの色が健全性ランクを表しています（緑=I・黄=II・橙=III・赤=IV）</li>
+  <li>地図はマウスのホイールでズームイン/ズームアウトできます</li>
+  <li>地図の下に橋梁一覧テーブルも表示されます</li>
+</ul>
+
+<hr>
+
+<h1>8. 健全性ランクの見かた</h1>
+
+<p>国土交通省「橋梁定期点検要領」で定められた橋梁の状態区分です。</p>
+
+<table>
+  <tr><th>ランク</th><th>区分名</th><th>状態の目安</th><th>対応の目安</th></tr>
+  <tr>
+    <td style="text-align:center;"><span class="badge badge-I">I</span></td>
+    <td><strong>健全</strong></td>
+    <td>損傷なし、または軽微</td>
+    <td>次回点検まで経過観察</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><span class="badge badge-II">II</span></td>
+    <td><strong>予防保全段階</strong></td>
+    <td>軽微なひびわれ・塗装劣化など</td>
+    <td>将来の悪化を防ぐ補修を計画</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><span class="badge badge-III">III</span></td>
+    <td><strong>早期措置段階</strong></td>
+    <td>床版損傷・鉄筋露出など</td>
+    <td>早めに補修を実施する</td>
+  </tr>
+  <tr>
+    <td style="text-align:center;"><span class="badge badge-IV">IV</span></td>
+    <td><strong>緊急措置段階</strong></td>
+    <td>貫通ひびわれ・鉄筋破断など</td>
+    <td>すぐに補修または通行規制</td>
+  </tr>
+</table>
+
+<p>ランク III・IV の橋梁はダッシュボードの「緊急・早期措置が必要な橋梁」に自動で表示されます。</p>
+
+<hr>
+
+<h1>9. よくある質問（Q&amp;A）</h1>
+
+<table>
+  <tr>
+    <th>Q. 画面が真っ白（または「起動中」）になった</th>
+  </tr>
+  <tr>
+    <td>しばらく使われていないとシステムが休止状態になります。そのまま30秒〜1分お待ちください。自動で起動します。</td>
+  </tr>
+  <tr>
+    <th>Q. 入力したデータが消えてしまった</th>
+  </tr>
+  <tr>
+    <td>無料のクラウドサーバーを利用しているため、サーバーが再起動するとデータがリセットされる場合があります。本格運用には専用サーバーへの移行をお勧めします。</td>
+  </tr>
+  <tr>
+    <th>Q. スマートフォンで使えますか？</th>
+  </tr>
+  <tr>
+    <td>スマートフォンでもアクセスできますが、画面が小さくなるため、タブレットまたはパソコンでの使用を推奨します。</td>
+  </tr>
+  <tr>
+    <th>Q. アップロードできるファイルのサイズ制限は？</th>
+  </tr>
+  <tr>
+    <td>1ファイルあたり最大200MBです。大容量のファイルは圧縮してからアップロードしてください。</td>
+  </tr>
+  <tr>
+    <th>Q. 複数人で同時に使えますか？</th>
+  </tr>
+  <tr>
+    <td>複数人で同時に閲覧することは可能ですが、同じ橋梁を複数人で同時に編集すると内容が競合する場合があります。入力作業は1人ずつ行うことをお勧めします。</td>
+  </tr>
+  <tr>
+    <th>Q. データのバックアップはどうすればいいですか？</th>
+  </tr>
+  <tr>
+    <td>現在のバージョンでは自動バックアップ機能はありません。定期的にデータを確認し、重要な記録は別途Excelや書面でも保管することをお勧めします。</td>
+  </tr>
+</table>
+
+<div class="point">
+  <div class="point-title">📞 お問い合わせ</div>
+  操作に関するご不明点は、システム管理担当者までお問い合わせください。
+</div>
+
+</div><!-- /page -->
+</body>
+</html>

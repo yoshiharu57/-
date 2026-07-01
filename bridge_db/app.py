@@ -359,6 +359,18 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
    タブレット・スマートフォン対応 (iPad 含む)
    ══════════════════════════════════════════════════ */
 
+/* ── メトリクスコンテナ（レスポンシブ）── */
+.metrics-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+.metrics-container .metric-card {
+    flex: 1 1 160px;
+    height: auto;
+}
+
 /* iPad縦向き以下 (max-width: 1024px) */
 @media (max-width: 1024px) {
     .block-container {
@@ -370,10 +382,15 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
     .page-header h1 { font-size: 1.3rem !important; }
     .page-header p  { font-size: 0.8rem !important; }
 
-    /* メトリクスカード: 横並び → スクロール */
-    .metric-card { padding: 0.8rem 1rem; }
-    .metric-card .mc-value { font-size: 1.6rem; }
-    .metric-card .mc-label { font-size: 0.7rem; }
+    /* タブレットでは2列に折り返す */
+    .metrics-container .metric-card {
+        flex: 1 1 calc(50% - 5px);
+        max-width: calc(50% - 5px);
+        padding: 0.9rem 1.1rem;
+    }
+    .metrics-container .metric-card .mc-value { font-size: 2rem; }
+    .metrics-container .metric-card .mc-label { font-size: 0.8rem; }
+    .metrics-container .metric-card .mc-icon-wrap { width: 46px; height: 46px; font-size: 1.6rem; }
 
     /* テーブルを横スクロール可能に */
     [data-testid="stDataFrame"] {
@@ -1035,18 +1052,19 @@ if page == "📊 ダッシュボード":
     rank_counts = dict(zip(df_summary["current_health_rank"], df_summary["cnt"]))
     total = sum(rank_counts.values())
 
-    # ── メトリクスカード（全面カラー）────────────────────
-    cols = st.columns(5)
+    # ── メトリクスカード（レスポンシブflexコンテナ）────────
     cards = [
-        ("管理橋梁数（総計）", f"{total}",                     "全管理橋梁",         "#2563eb", "🌉"),
-        ("I : 健全",           f"{rank_counts.get('I', 0)}",   "措置不要",           RANK_COLOR["I"],   "✅"),
-        ("II : 予防保全",      f"{rank_counts.get('II', 0)}",  "監視・予防保全措置", RANK_COLOR["II"],  "🔔"),
-        ("III : 早期措置",     f"{rank_counts.get('III', 0)}", "早期補修が必要",     RANK_COLOR["III"], "⚠️"),
-        ("IV : 緊急措置",      f"{rank_counts.get('IV', 0)}",  "緊急補修・通行規制検討", RANK_COLOR["IV"], "🚨"),
+        ("管理橋梁数（総計）", f"{total}",                     "全管理橋梁",             "#2563eb",         "🌉"),
+        ("I : 健全",           f"{rank_counts.get('I', 0)}",   "措置不要",               RANK_COLOR["I"],   "✅"),
+        ("II : 予防保全",      f"{rank_counts.get('II', 0)}",  "監視・予防保全措置",     RANK_COLOR["II"],  "🔔"),
+        ("III : 早期措置",     f"{rank_counts.get('III', 0)}", "早期補修が必要",         RANK_COLOR["III"], "⚠️"),
+        ("IV : 緊急措置",      f"{rank_counts.get('IV', 0)}",  "緊急補修・通行規制検討", RANK_COLOR["IV"],  "🚨"),
     ]
-    for col, (label, val, sub, color, icon) in zip(cols, cards):
-        with col:
-            st.markdown(metric_card(label, val + " 橋", sub, color, icon), unsafe_allow_html=True)
+    cards_html = "".join(
+        metric_card(label, val + " 橋", sub, color, icon)
+        for label, val, sub, color, icon in cards
+    )
+    st.markdown(f'<div class="metrics-container">{cards_html}</div>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
