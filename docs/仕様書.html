@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>橋梁管理システム 仕様書</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; font-size: 10pt; color: #1e293b; background: #fff; line-height: 1.7; }
+
+  /* 表紙 */
+  .cover { page-break-after: always; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(160deg, #1e3a5f 0%, #0f2340 100%); color: #fff; text-align: center; padding: 3rem; }
+  .cover-icon { font-size: 5rem; margin-bottom: 1.5rem; }
+  .cover-title { font-size: 2.2rem; font-weight: 900; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+  .cover-subtitle { font-size: 1.1rem; color: #94a3b8; margin-bottom: 3rem; }
+  .cover-meta { font-size: 0.9rem; color: #cbd5e1; line-height: 2.2; }
+  .cover-meta td { padding: 0 1.5rem; }
+  .cover-meta td:first-child { text-align: right; color: #94a3b8; }
+
+  /* ページ */
+  .page { padding: 2cm 2.5cm; max-width: 210mm; margin: 0 auto; }
+  @media print {
+    .page { padding: 1.5cm 2cm; }
+    .cover { min-height: 100vh; }
+  }
+
+  /* 見出し */
+  h1 { font-size: 1.5rem; font-weight: 900; color: #1e3a5f; border-left: 5px solid #2563eb; padding-left: 0.8rem; margin: 2rem 0 1rem; }
+  h2 { font-size: 1.15rem; font-weight: 700; color: #1e3a5f; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.3rem; margin: 1.8rem 0 0.8rem; }
+  h3 { font-size: 1rem; font-weight: 700; color: #334155; margin: 1.2rem 0 0.5rem; }
+  p { margin-bottom: 0.6rem; }
+
+  /* テーブル */
+  table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1.2rem; font-size: 9.5pt; }
+  th { background: #1e3a5f; color: #fff; padding: 6px 10px; text-align: left; font-weight: 600; }
+  td { padding: 5px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+
+  /* バッジ */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8.5pt; font-weight: 700; }
+  .badge-I   { background: #dcfce7; color: #15803d; }
+  .badge-II  { background: #fef9c3; color: #a16207; }
+  .badge-III { background: #ffedd5; color: #c2410c; }
+  .badge-IV  { background: #fee2e2; color: #b91c1c; }
+
+  /* インフォブロック */
+  .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.8rem 0; font-size: 9.5pt; }
+  .warn-box  { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 0.8rem 1rem; margin: 0.8rem 0; font-size: 9.5pt; }
+
+  /* コード */
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 9pt; color: #0f172a; }
+
+  /* 区切り */
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }
+
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.6rem; }
+  li { margin-bottom: 0.3rem; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- 表紙 -->
+<div class="cover">
+  <div class="cover-icon">🌉</div>
+  <div class="cover-title">橋梁管理システム</div>
+  <div class="cover-subtitle">Bridge Inspection &amp; Ledger Management System</div>
+  <div style="border-top:1px solid #2d4a6b; width:200px; margin:1.5rem auto;"></div>
+  <table class="cover-meta">
+    <tr><td>文書種別</td><td>システム仕様書</td></tr>
+    <tr><td>バージョン</td><td>1.0</td></tr>
+    <tr><td>準拠規格</td><td>国土交通省 橋梁定期点検要領</td></tr>
+    <tr><td>作成日</td><td>2026年7月</td></tr>
+    <tr><td>URL</td><td>https://e2j4hnwswmmt4gqrzsbbdc.streamlit.app/</td></tr>
+  </table>
+</div>
+
+<!-- 本文 -->
+<div class="page">
+
+<h1>1. システム概要</h1>
+
+<p>本システムは、自治体が管理する橋梁の台帳・点検記録・補修履歴を一元管理する Webアプリケーションです。国土交通省「橋梁定期点検要領」の健全性ランク区分（I〜IV）に準拠し、橋梁の現況把握から補修計画の立案まで支援します。</p>
+
+<div class="two-col">
+<div class="info-box">
+  <strong>主な目的</strong>
+  <ul style="margin-top:0.4rem;">
+    <li>橋梁台帳（基本情報）の電子化・一元管理</li>
+    <li>定期点検結果の記録・検索</li>
+    <li>健全性ランクによる優先順位付け</li>
+    <li>補修履歴・費用の蓄積</li>
+    <li>点検写真・調書PDFの管理</li>
+  </ul>
+</div>
+<div class="info-box">
+  <strong>対象ユーザー</strong>
+  <ul style="margin-top:0.4rem;">
+    <li>市区町村 道路管理担当者</li>
+    <li>橋梁点検業務受託者（コンサルタント）</li>
+    <li>首長・議会向け現況報告用</li>
+  </ul>
+</div>
+</div>
+
+<h1>2. システム構成</h1>
+
+<h2>2-1. 技術スタック</h2>
+<table>
+  <tr><th>区分</th><th>技術・ライブラリ</th><th>用途</th></tr>
+  <tr><td>フロントエンド/UI</td><td>Streamlit 1.x（Python）</td><td>Webアプリ画面全体</td></tr>
+  <tr><td>データベース</td><td>SQLite 3</td><td>橋梁・点検・補修データ管理</td></tr>
+  <tr><td>地図</td><td>Folium / Leaflet.js</td><td>橋梁位置図（インタラクティブ地図）</td></tr>
+  <tr><td>データ処理</td><td>pandas</td><td>集計・テーブル生成</td></tr>
+  <tr><td>ファイル保存</td><td>ローカルファイルシステム</td><td>写真・PDF・Excel の格納</td></tr>
+  <tr><td>ホスティング</td><td>Streamlit Community Cloud</td><td>インターネット公開</td></tr>
+  <tr><td>バージョン管理</td><td>GitHub</td><td>ソースコード管理・デプロイ連携</td></tr>
+</table>
+
+<h2>2-2. ディレクトリ構成</h2>
+<table>
+  <tr><th>パス</th><th>内容</th></tr>
+  <tr><td><code>bridge_db/app.py</code></td><td>アプリ本体（約2,100行）</td></tr>
+  <tr><td><code>bridge_db/schema.sql</code></td><td>データベーススキーマ定義</td></tr>
+  <tr><td><code>bridge_db/data/bridges.db</code></td><td>SQLiteデータベース</td></tr>
+  <tr><td><code>bridge_db/storage/bridges/{code}/photos/</code></td><td>橋梁写真ファイル格納先</td></tr>
+  <tr><td><code>bridge_db/storage/bridges/{code}/forms/</code></td><td>点検調書・帳票PDFファイル格納先</td></tr>
+  <tr><td><code>bridge_db/storage/bridges/{code}/drawings/</code></td><td>一般図・図面ファイル格納先</td></tr>
+  <tr><td><code>bridge_db/scripts/generate_dummy_data.py</code></td><td>初期サンプルデータ生成スクリプト</td></tr>
+  <tr><td><code>bridge_db/requirements.txt</code></td><td>Pythonパッケージ依存リスト</td></tr>
+</table>
+
+<div class="warn-box">
+  <strong>Streamlit Cloud 対応</strong>：クラウド環境では <code>/mount/src/</code> が読み取り専用のため、DBは <code>/tmp/bridge_db/bridges.db</code> に自動フォールバックし、初回起動時にスキーマ作成・サンプルデータ投入を自動実行します。
+</div>
+
+<div class="page-break"></div>
+
+<h1>3. データベース設計</h1>
+
+<h2>3-1. テーブル一覧</h2>
+<table>
+  <tr><th>テーブル名</th><th>説明</th><th>主キー</th></tr>
+  <tr><td><code>routes</code></td><td>路線マスタ（町道・県道・農道等）</td><td>route_id</td></tr>
+  <tr><td><code>bridges</code></td><td>橋梁基本情報（台帳）</td><td>bridge_id</td></tr>
+  <tr><td><code>inspections</code></td><td>点検履歴</td><td>inspection_id</td></tr>
+  <tr><td><code>repairs</code></td><td>補修・補強履歴</td><td>repair_id</td></tr>
+  <tr><td><code>photos</code></td><td>写真ファイル管理</td><td>photo_id</td></tr>
+  <tr><td><code>documents</code></td><td>帳票・調書ファイル管理</td><td>doc_id</td></tr>
+</table>
+
+<h2>3-2. bridges テーブル（橋梁台帳）主要カラム</h2>
+<table>
+  <tr><th>カラム名</th><th>型</th><th>説明</th></tr>
+  <tr><td>bridge_code</td><td>TEXT</td><td>管理番号（例: T-001）— ユニーク</td></tr>
+  <tr><td>bridge_name</td><td>TEXT</td><td>橋名</td></tr>
+  <tr><td>bridge_name_kana</td><td>TEXT</td><td>橋名（カナ）</td></tr>
+  <tr><td>route_id</td><td>INTEGER</td><td>路線マスタ外部キー</td></tr>
+  <tr><td>manager_name</td><td>TEXT</td><td>管理者名</td></tr>
+  <tr><td>location_name</td><td>TEXT</td><td>所在地（字名）</td></tr>
+  <tr><td>latitude / longitude</td><td>REAL</td><td>緯度・経度（WGS84）</td></tr>
+  <tr><td>built_year</td><td>INTEGER</td><td>架設年（西暦）</td></tr>
+  <tr><td>bridge_length</td><td>REAL</td><td>橋長（m）</td></tr>
+  <tr><td>bridge_width</td><td>REAL</td><td>幅員（m）</td></tr>
+  <tr><td>superstructure_type</td><td>TEXT</td><td>上部工形式</td></tr>
+  <tr><td>substructure_type</td><td>TEXT</td><td>下部工形式</td></tr>
+  <tr><td>span_count</td><td>INTEGER</td><td>径間数</td></tr>
+  <tr><td>material</td><td>TEXT</td><td>主要材料（RC/PC/鋼/石/木）</td></tr>
+  <tr><td>current_health_rank</td><td>TEXT</td><td>現況健全性ランク（I/II/III/IV）</td></tr>
+  <tr><td>is_active</td><td>INTEGER</td><td>現役フラグ（1:現役, 0:廃橋）</td></tr>
+</table>
+
+<h2>3-3. inspections テーブル（点検履歴）主要カラム</h2>
+<table>
+  <tr><th>カラム名</th><th>型</th><th>説明</th></tr>
+  <tr><td>inspection_date</td><td>TEXT</td><td>点検年月日（YYYY-MM-DD）</td></tr>
+  <tr><td>inspection_type</td><td>TEXT</td><td>点検種別（定期/緊急/初回）</td></tr>
+  <tr><td>inspector_name / inspector_org</td><td>TEXT</td><td>点検者氏名・機関名</td></tr>
+  <tr><td>health_rank</td><td>TEXT</td><td>健全性ランク（I/II/III/IV）</td></tr>
+  <tr><td>overall_judgment</td><td>TEXT</td><td>総合所見</td></tr>
+  <tr><td>damage_superstructure</td><td>TEXT</td><td>上部工損傷状況</td></tr>
+  <tr><td>countermeasure_type</td><td>TEXT</td><td>措置区分（A/B/C/D/E）</td></tr>
+  <tr><td>next_inspection_year</td><td>INTEGER</td><td>次回点検推奨年</td></tr>
+  <tr><td>estimated_cost</td><td>INTEGER</td><td>補修概算費用（千円）</td></tr>
+  <tr><td>access_method</td><td>TEXT</td><td>点検足場</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h1>4. 機能仕様</h1>
+
+<h2>4-1. ダッシュボード</h2>
+<ul>
+  <li>管理橋梁総数・健全ランクI件数・要注意（II）件数・緊急/早期（III以上）件数を集計表示</li>
+  <li>緊急措置・早期措置が必要な橋梁のアラートカード表示</li>
+  <li>直近10件の点検記録サマリー表示</li>
+</ul>
+
+<h2>4-2. 橋梁一覧</h2>
+<ul>
+  <li>健全性ランク・路線・材料・橋長分類によるフィルタリング</li>
+  <li>一覧テーブル（管理番号・橋名・路線・橋長・幅員・橋長分類・架設年・健全性ランク・最終点検日）</li>
+  <li><strong>橋梁追加</strong>：新規橋梁の登録（識別情報・路線・位置・諸元）</li>
+  <li><strong>情報変更</strong>：既存橋梁の基本情報編集</li>
+  <li><strong>橋梁削除</strong>：アーカイブ（廃橋扱い）または完全削除</li>
+</ul>
+
+<h2>4-3. 橋梁詳細</h2>
+<p>橋梁を選択して4タブで詳細情報を閲覧・編集できます。</p>
+<table>
+  <tr><th>タブ</th><th>内容</th></tr>
+  <tr><td>基本情報</td><td>橋梁諸元（管理番号・橋名・路線・所在地・座標・架設年・橋長・幅員・構造形式等）の表示。Google マップリンクあり。</td></tr>
+  <tr><td>点検履歴</td><td>過去の点検記録一覧。健全性ランク・措置区分・点検者・所見を表示。</td></tr>
+  <tr><td>補修履歴</td><td>補修記録の一覧表示。新規入力・変更・削除（CRUD）が可能。補修種別・施工業者・費用・保証期限を管理。</td></tr>
+  <tr><td>ファイル管理</td><td>写真データ・調査様式帳票（PDF/Excel）・一般図面のアップロード・表示・ダウンロード。PDFはアプリ内でインラインプレビュー可能（「👁 表示」ボタン）。</td></tr>
+</table>
+
+<h2>4-4. 点検記録入力</h2>
+<ul>
+  <li>対象橋梁をプルダウンで選択</li>
+  <li>点検年月日・点検種別・健全性ランク・措置区分・点検足場・点検者氏名/機関名・次回点検推奨年・補修概算費用・総合所見を入力・登録</li>
+  <li>登録直後に点検調書（PDF/Excel）を添付アップロード可能</li>
+  <li>登録と同時に橋梁の現況健全性ランクを自動更新</li>
+</ul>
+
+<h2>4-5. 地図</h2>
+<ul>
+  <li>Folium（Leaflet.js）を使用したインタラクティブマップ</li>
+  <li>健全性ランクに応じた色分けマーカー表示</li>
+  <li>マーカークリックで橋梁名・管理番号・ランクをポップアップ表示</li>
+  <li>地図下部に橋梁一覧テーブル（フィルタ付き）</li>
+</ul>
+
+<hr>
+
+<h1>5. 健全性ランク・措置区分</h1>
+
+<h2>5-1. 健全性ランク（国土交通省基準）</h2>
+<table>
+  <tr><th>ランク</th><th>区分名</th><th>状態</th></tr>
+  <tr><td><span class="badge badge-I">I</span></td><td>健全</td><td>損傷が認められないか、損傷が軽微で構造安全性に問題のない状態</td></tr>
+  <tr><td><span class="badge badge-II">II</span></td><td>予防保全段階</td><td>予防保全の観点から措置を行うことが望ましい状態</td></tr>
+  <tr><td><span class="badge badge-III">III</span></td><td>早期措置段階</td><td>構造安全性、耐久性及び使用性の確保のため、早期に措置を講ずべき状態</td></tr>
+  <tr><td><span class="badge badge-IV">IV</span></td><td>緊急措置段階</td><td>構造安全性の観点から、緊急に措置を講ずべき状態</td></tr>
+</table>
+
+<h2>5-2. 措置区分</h2>
+<table>
+  <tr><th>区分</th><th>内容</th></tr>
+  <tr><td>A</td><td>措置不要</td></tr>
+  <tr><td>B</td><td>監視（経過観察）</td></tr>
+  <tr><td>C</td><td>予防保全措置</td></tr>
+  <tr><td>D</td><td>早期措置</td></tr>
+  <tr><td>E</td><td>緊急措置</td></tr>
+</table>
+
+<h2>5-3. 橋長分類（道路橋定期点検診断歩掛調査表基準）</h2>
+<table>
+  <tr><th>橋長分類</th></tr>
+  <tr><td>2m以上5m以下</td></tr>
+  <tr><td>5mを超え10m以下</td></tr>
+  <tr><td>10mを超え15m以下</td></tr>
+  <tr><td>15mを超え20m以下</td></tr>
+  <tr><td>20mを超え30m以下</td></tr>
+  <tr><td>30mを超え50m以下</td></tr>
+  <tr><td>50mを超え100m以下</td></tr>
+  <tr><td>100mを超え</td></tr>
+</table>
+
+<hr>
+
+<h1>6. 対応ファイル形式</h1>
+<table>
+  <tr><th>種別</th><th>対応形式</th></tr>
+  <tr><td>写真</td><td>JPG / JPEG / PNG / WEBP / HEIC</td></tr>
+  <tr><td>調査様式・帳票</td><td>PDF / Excel（xlsx/xls）/ Word（docx/doc）/ CSV</td></tr>
+  <tr><td>一般図・図面</td><td>PDF / JPG / PNG / Excel / Word</td></tr>
+</table>
+
+<hr>
+
+<h1>7. 動作環境・アクセス方法</h1>
+<table>
+  <tr><th>項目</th><th>内容</th></tr>
+  <tr><td>アクセス方法</td><td>Webブラウザのみ（インストール不要）</td></tr>
+  <tr><td>推奨ブラウザ</td><td>Google Chrome / Microsoft Edge（最新版）</td></tr>
+  <tr><td>推奨画面サイズ</td><td>1280px以上（タブレット・PC）</td></tr>
+  <tr><td>公開URL</td><td>https://e2j4hnwswmmt4gqrzsbbdc.streamlit.app/</td></tr>
+  <tr><td>ホスティング</td><td>Streamlit Community Cloud（無料枠）</td></tr>
+  <tr><td>ソースコード管理</td><td>GitHub（yoshiharu57/- リポジトリ, メインブランチ）</td></tr>
+</table>
+
+<div class="warn-box">
+<strong>注意</strong>：Streamlit Community Cloud（無料枠）では、一定時間アクセスがないとアプリが「スリープ」状態になります。スリープ中はアクセス時に起動待ち（30秒〜1分程度）が発生します。また、アップロードしたファイルやDB変更はサーバー再起動時にリセットされる場合があります。本番運用には有料プランまたは専用サーバーへの移行を推奨します。
+</div>
+
+</div><!-- /page -->
+</body>
+</html>
