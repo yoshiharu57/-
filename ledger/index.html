@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>橋梁台帳システム — デモ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', 'Helvetica Neue', Arial, sans-serif; background: #f0f2f6; display: flex; min-height: 100vh; font-size: 14px; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 230px; background: #1e2a3a; color: #cdd8e3; padding: 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 10; }
+    .sidebar-title { font-size: 1.05rem; font-weight: 900; padding: 18px 16px 16px; border-bottom: 1px solid #2d3d4f; background: #152032; color: #fff; letter-spacing: 0.03em; }
+    .sidebar-title em { color: #4fc3f7; font-style: normal; }
+    .nav-section { padding: 14px 16px 4px; font-size: 0.68rem; color: #607d8b; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
+    .nav-item { padding: 10px 16px; cursor: pointer; font-size: 0.92rem; border-left: 3px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
+    .nav-item:hover { background: #263545; color: #fff; }
+    .nav-item.active { background: #263545; border-left-color: #4fc3f7; color: #4fc3f7; font-weight: 700; }
+    .sidebar-footer { padding: 12px 16px; font-size: 0.72rem; color: #4a6070; border-top: 1px solid #2d3d4f; background: #152032; margin-top: auto; }
+
+    /* ── Demo Badge ── */
+    .demo-badge { position: fixed; top: 12px; right: 14px; background: linear-gradient(135deg, #e65100, #bf360c); color: white; padding: 5px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; z-index: 200; box-shadow: 0 2px 8px rgba(0,0,0,0.3); letter-spacing: 0.5px; }
+
+    /* ── Main ── */
+    .main { margin-left: 230px; padding: 24px; flex: 1; min-height: 100vh; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Page Header ── */
+    .page-header { background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); border-radius: 12px; padding: 1.2rem 1.8rem; margin-bottom: 1.5rem; }
+    .page-header h1 { color: white; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .page-header p { color: rgba(255,255,255,0.75); font-size: 0.83rem; }
+
+    /* ── Metric Cards ── */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .metric-card { background: white; border-radius: 10px; padding: 1rem 1.2rem; border-left: 5px solid #2563eb; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .metric-card.green { border-left-color: #16a34a; }
+    .metric-card.yellow { border-left-color: #d97706; }
+    .metric-card.orange { border-left-color: #ea580c; }
+    .metric-card.red { border-left-color: #dc2626; }
+    .mc-label { font-size: 0.72rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .mc-value { font-size: 2rem; font-weight: 700; color: #1e293b; line-height: 1.1; }
+    .mc-sub { font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem; }
+
+    /* ── Section Header ── */
+    .section-header { display: flex; align-items: center; gap: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; margin-bottom: 1rem; margin-top: 1.5rem; }
+    .section-header span { font-size: 1rem; font-weight: 700; color: #1e293b; }
+
+    /* ── Rank Badge ── */
+    .rank-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .rank-I   { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
+    .rank-II  { background: #fffbeb; color: #d97706; border: 1px solid #fcd34d; }
+    .rank-III { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; }
+    .rank-IV  { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+
+    /* ── Alert Cards ── */
+    .alert-card { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px; padding: 0.8rem 1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.8rem; }
+    .alert-card.warn { background: #fff7ed; border-color: #fdba74; }
+    .ac-icon { font-size: 1.3rem; }
+    .ac-name { font-weight: 700; color: #1e293b; font-size: 0.9rem; }
+    .ac-sub { font-size: 0.75rem; color: #64748b; margin-top: 0.1rem; }
+
+    /* ── Bridge Table ── */
+    .bridge-table-wrap { overflow-x: auto; }
+    .bridge-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .bridge-table th { background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 600; padding: 10px 12px; text-align: left; white-space: nowrap; border-bottom: 2px solid #e2e8f0; }
+    .bridge-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.83rem; color: #334155; white-space: nowrap; }
+    .bridge-table tr:last-child td { border-bottom: none; }
+    .bridge-table tr:hover td { background: #f8fafc; }
+    .bridge-code { font-weight: 700; color: #dc2626; }
+    .map-link { color: #2563eb; text-decoration: none; font-size: 0.8rem; }
+
+    /* ── Filter Bar ── */
+    .filter-bar { background: white; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .filter-bar label { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 4px; display: block; }
+    .filter-bar select, .filter-bar input { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; font-size: 0.85rem; color: #334155; outline: none; }
+    .filter-bar select:focus, .filter-bar input:focus { border-color: #2563eb; }
+
+    /* ── Bridge Detail ── */
+    .bridge-hero { background: white; border-radius: 12px; padding: 1.2rem 1.8rem; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-left: 6px solid #2563eb; }
+    .bh-code { font-size: 0.85rem; color: #64748b; }
+    .bh-name { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0.2rem 0; }
+    .bh-sub { font-size: 0.82rem; color: #64748b; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 1rem; }
+    .tab-btn { padding: 8px 16px; cursor: pointer; font-size: 0.88rem; border: none; background: none; color: #64748b; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; font-weight: 500; }
+    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; }
+    .tab-btn:hover { color: #1e293b; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Info Grid ── */
+    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .info-item { background: #f8fafc; border-radius: 8px; padding: 10px 14px; }
+    .info-label { font-size: 0.72rem; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+    .info-value { font-size: 0.9rem; color: #1e293b; font-weight: 500; }
+
+    /* ── Inspection Card ── */
+    .insp-card { background: white; border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 0.8rem; box-shadow: 0 1px 3px rgba(0,0,0,0.07); border-left: 4px solid #e2e8f0; }
+    .insp-card.rank-I-b { border-left-color: #16a34a; }
+    .insp-card.rank-II-b { border-left-color: #d97706; }
+    .insp-card.rank-III-b { border-left-color: #ea580c; }
+    .ic-date { font-size: 0.78rem; color: #64748b; }
+    .ic-title { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0.2rem 0; }
+    .ic-body { font-size: 0.83rem; color: #475569; margin-top: 0.4rem; line-height: 1.6; }
+    .ic-meta { font-size: 0.75rem; color: #94a3b8; margin-top: 0.4rem; }
+
+    /* ── Repair Card ── */
+    .repair-card { background: white; border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 3px solid #2563eb; }
+    .rc-date { font-size: 0.75rem; color: #64748b; }
+    .rc-type { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
+    .rc-desc { font-size: 0.82rem; color: #475569; margin-top: 0.2rem; }
+    .rc-meta { font-size: 0.75rem; color: #94a3b8; margin-top: 0.3rem; }
+
+    /* ── Form ── */
+    .form-card { background: white; border-radius: 10px; padding: 1.4rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 0.78rem; font-weight: 600; color: #475569; }
+    .form-group input, .form-group select, .form-group textarea { border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 7px 10px; font-size: 0.88rem; font-family: inherit; outline: none; transition: border 0.2s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #2563eb; }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .btn-primary { background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white; border: none; padding: 10px 28px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; margin-top: 12px; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 8px 18px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+
+    /* ── Map Placeholder ── */
+    .map-placeholder { background: linear-gradient(135deg, #dbeafe, #eff6ff); border-radius: 10px; height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #3b82f6; font-size: 1rem; font-weight: 600; gap: 8px; border: 2px dashed #93c5fd; margin-bottom: 16px; }
+
+    /* ── Rank Bar ── */
+    .rank-bars { display: flex; gap: 12px; margin-bottom: 20px; }
+    .rank-bar-item { flex: 1; background: white; border-radius: 10px; padding: 1rem; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .rbi-count { font-size: 2.2rem; font-weight: 800; }
+    .rbi-label { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+    .rbi-bar { height: 6px; border-radius: 3px; margin-top: 8px; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1e3a5f; color: white; padding: 12px 22px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,0.2); opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 999; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Management Tabs ── */
+    .mgmt-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .mgmt-tab { padding: 8px 18px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.85rem; cursor: pointer; font-weight: 600; background: white; color: #475569; }
+    .mgmt-tab.active { background: #2563eb; border-color: #2563eb; color: white; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .rank-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 0.8rem; }
+    .rl-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+
+    @media (max-width: 900px) {
+      .sidebar { width: 60px; }
+      .main { margin-left: 60px; }
+      .nav-item span:last-child, .sidebar-title em, .sidebar-footer { display: none; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .info-grid { grid-template-columns: 1fr 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-title">🌉 <em>橋梁台帳</em></div>
+  <div class="nav-section">メニュー</div>
+  <div class="nav-item active" onclick="showPage('dashboard', this)"><span>📊</span><span>ダッシュボード</span></div>
+  <div class="nav-item" onclick="showPage('maplist', this)"><span>🗺️</span><span>地図・一覧</span></div>
+  <div class="nav-item" onclick="showPage('detail', this)"><span>🔍</span><span>橋梁詳細</span></div>
+  <div class="nav-item" onclick="showPage('inspection', this)"><span>📋</span><span>点検記録入力</span></div>
+  <div class="nav-item" onclick="showPage('manage', this)"><span>🏗️</span><span>橋梁管理</span></div>
+  <div style="height: 40px;"></div>
+  <div class="sidebar-footer">橋梁台帳システム v1.0<br>デモ版</div>
+</div>
+
+<div class="demo-badge">🔴 DEMO</div>
+
+<div class="main">
+
+  <!-- ===== ダッシュボード ===== -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-header">
+      <h1>📊 橋梁管理 ダッシュボード</h1>
+      <p>管理橋梁の健全性状況と点検記録の概要</p>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-card" style="border-left-color:#2563eb">
+        <div class="mc-label">管理橋梁数</div>
+        <div class="mc-value">10</div>
+        <div class="mc-sub">アクティブな橋梁</div>
+      </div>
+      <div class="metric-card" style="border-left-color:#16a34a">
+        <div class="mc-label">健全（ランクI）</div>
+        <div class="mc-value" style="color:#16a34a">4</div>
+        <div class="mc-sub">全体の 40%</div>
+      </div>
+      <div class="metric-card" style="border-left-color:#d97706">
+        <div class="mc-label">予防保全（ランクII）</div>
+        <div class="mc-value" style="color:#d97706">3</div>
+        <div class="mc-sub">全体の 30%</div>
+      </div>
+      <div class="metric-card" style="border-left-color:#dc2626">
+        <div class="mc-label">措置必要（III・IV）</div>
+        <div class="mc-value" style="color:#dc2626">3</div>
+        <div class="mc-sub">早期対応が必要</div>
+      </div>
+    </div>
+
+    <!-- ランク分布 -->
+    <div class="section-header"><span>📈 健全性ランク分布</span></div>
+    <div class="rank-bars">
+      <div class="rank-bar-item">
+        <div class="rbi-count" style="color:#16a34a">4</div>
+        <div class="rbi-label">ランク I<br>健全</div>
+        <div class="rbi-bar" style="background:#16a34a; width:40%"></div>
+      </div>
+      <div class="rank-bar-item">
+        <div class="rbi-count" style="color:#d97706">3</div>
+        <div class="rbi-label">ランク II<br>予防保全</div>
+        <div class="rbi-bar" style="background:#d97706; width:30%"></div>
+      </div>
+      <div class="rank-bar-item">
+        <div class="rbi-count" style="color:#ea580c">2</div>
+        <div class="rbi-label">ランク III<br>早期措置</div>
+        <div class="rbi-bar" style="background:#ea580c; width:20%"></div>
+      </div>
+      <div class="rank-bar-item">
+        <div class="rbi-count" style="color:#dc2626">1</div>
+        <div class="rbi-label">ランク IV<br>緊急措置</div>
+        <div class="rbi-bar" style="background:#dc2626; width:10%"></div>
+      </div>
+    </div>
+
+    <!-- 緊急アラート -->
+    <div class="section-header"><span>⚠️ 緊急・早期措置が必要な橋梁</span></div>
+    <div class="alert-card">
+      <div class="ac-icon">🚨</div>
+      <div>
+        <div class="ac-name">T-009　谷口橋</div>
+        <div class="ac-sub">ランク IV（緊急措置段階）　最終点検：2018-06-01　路線：農道A線</div>
+      </div>
+      <span class="rank-badge rank-IV" style="margin-left:auto">IV</span>
+    </div>
+    <div class="alert-card warn">
+      <div class="ac-icon">⚠️</div>
+      <div>
+        <div class="ac-name">T-004　梅ノ木橋</div>
+        <div class="ac-sub">ランク III（早期措置段階）　最終点検：2020-11-25　路線：県道45号線</div>
+      </div>
+      <span class="rank-badge rank-III" style="margin-left:auto">III</span>
+    </div>
+    <div class="alert-card warn">
+      <div class="ac-icon">⚠️</div>
+      <div>
+        <div class="ac-name">T-006　田中橋</div>
+        <div class="ac-sub">ランク III（早期措置段階）　最終点検：2019-04-15　路線：農道A線</div>
+      </div>
+      <span class="rank-badge rank-III" style="margin-left:auto">III</span>
+    </div>
+
+    <!-- 直近の点検記録 -->
+    <div class="section-header"><span>📋 直近の点検記録（最新10件）</span></div>
+    <div style="overflow-x:auto">
+      <table class="bridge-table">
+        <thead><tr>
+          <th>点検日</th><th>管理番号</th><th>橋梁名</th><th>点検種別</th>
+          <th>健全性</th><th>措置区分</th><th>点検者</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>2023-10-30</td><td><span class="bridge-code">T-008</span></td><td>若葉橋</td><td>定期</td><td><span class="rank-badge rank-I">I</span></td><td>A</td><td>佐藤 三郎</td></tr>
+          <tr><td>2023-08-22</td><td><span class="bridge-code">T-010</span></td><td>緑橋</td><td>定期</td><td><span class="rank-badge rank-I">I</span></td><td>A</td><td>高橋 四郎</td></tr>
+          <tr><td>2023-07-20</td><td><span class="bridge-code">T-005</span></td><td>西川橋</td><td>定期</td><td><span class="rank-badge rank-I">I</span></td><td>A</td><td>佐藤 三郎</td></tr>
+          <tr><td>2023-05-10</td><td><span class="bridge-code">T-002</span></td><td>松川橋</td><td>定期</td><td><span class="rank-badge rank-I">I</span></td><td>A</td><td>田中 一郎</td></tr>
+          <tr><td>2022-09-01</td><td><span class="bridge-code">T-003</span></td><td>新橋</td><td>定期</td><td><span class="rank-badge rank-II">II</span></td><td>B</td><td>佐藤 三郎</td></tr>
+          <tr><td>2022-03-08</td><td><span class="bridge-code">T-007</span></td><td>大正橋</td><td>定期</td><td><span class="rank-badge rank-II">II</span></td><td>B</td><td>高橋 四郎</td></tr>
+          <tr><td>2021-10-15</td><td><span class="bridge-code">T-001</span></td><td>桜橋</td><td>定期</td><td><span class="rank-badge rank-II">II</span></td><td>C</td><td>田中 一郎</td></tr>
+          <tr><td>2020-11-25</td><td><span class="bridge-code">T-004</span></td><td>梅ノ木橋</td><td>定期</td><td><span class="rank-badge rank-III">III</span></td><td>D</td><td>田中 一郎</td></tr>
+          <tr><td>2019-04-15</td><td><span class="bridge-code">T-006</span></td><td>田中橋</td><td>定期</td><td><span class="rank-badge rank-III">III</span></td><td>D</td><td>田中 一郎</td></tr>
+          <tr><td>2018-06-01</td><td><span class="bridge-code">T-009</span></td><td>谷口橋</td><td>定期</td><td><span class="rank-badge rank-IV">IV</span></td><td>E</td><td>田中 一郎</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 地図・一覧 ===== -->
+  <div id="page-maplist" class="page">
+    <div class="page-header">
+      <h1>🗺️ 橋梁位置図・一覧</h1>
+      <p>地図上の位置確認と橋梁一覧の検索・ダウンロード</p>
+    </div>
+
+    <div class="filter-bar">
+      <div>
+        <label>健全性ランク</label>
+        <select><option>すべて</option><option>I</option><option>II</option><option>III</option><option>IV</option></select>
+      </div>
+      <div>
+        <label>路線</label>
+        <select><option>（すべて）</option><option>町道1号線</option><option>町道2号線</option><option>県道45号線</option><option>農道A線</option></select>
+      </div>
+      <div>
+        <label>橋名で検索</label>
+        <input type="text" placeholder="例: 桜橋">
+      </div>
+    </div>
+
+    <div class="map-placeholder">
+      <div style="font-size:2.5rem">🗺️</div>
+      <div>橋梁位置図（地図）</div>
+      <div style="font-size:0.8rem; color:#93c5fd">10件の橋梁をマッピング表示</div>
+    </div>
+
+    <div class="section-header"><span>🌉 橋梁一覧（10件）</span></div>
+    <div class="bridge-table-wrap">
+      <table class="bridge-table">
+        <thead><tr>
+          <th>管理番号</th><th>橋梁名</th><th>路線名</th><th>所在地</th>
+          <th>地図</th><th>前回点検</th><th>次回点検予定</th>
+          <th>健全性</th><th>点検足場</th><th>点検数</th>
+          <th>幅員分類</th><th>橋長分類</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><span class="bridge-code">T-001</span></td><td><strong>桜橋</strong></td><td>町道1号線</td><td>大字桜町</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2021-10-15</td><td>📅 2026年</td><td><span class="rank-badge rank-II">II</span></td><td>橋梁点検車</td><td style="text-align:center">2</td><td>4m程度</td><td>15mを超え20m以下</td></tr>
+          <tr><td><span class="bridge-code">T-002</span></td><td><strong>松川橋</strong></td><td>町道1号線</td><td>大字松川</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2023-05-10</td><td>📅 2029年</td><td><span class="rank-badge rank-I">I</span></td><td>目視のみ</td><td style="text-align:center">1</td><td>4m程度</td><td>30mを超え50m以下</td></tr>
+          <tr><td><span class="bridge-code">T-003</span></td><td><strong>新橋</strong></td><td>町道2号線</td><td>大字新田</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2022-09-01</td><td>📅 2026年</td><td><span class="rank-badge rank-II">II</span></td><td>橋梁点検車</td><td style="text-align:center">1</td><td>8m程度</td><td>20mを超え30m以下</td></tr>
+          <tr><td><span class="bridge-code">T-004</span></td><td><strong>梅ノ木橋</strong></td><td>県道45号線</td><td>大字梅ノ木</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2020-11-25</td><td>📅 2024年</td><td><span class="rank-badge rank-III">III</span></td><td>リフト車</td><td style="text-align:center">2</td><td>4m程度</td><td>10mを超え15m以下</td></tr>
+          <tr><td><span class="bridge-code">T-005</span></td><td><strong>西川橋</strong></td><td>町道2号線</td><td>大字西川</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2023-07-20</td><td>📅 2029年</td><td><span class="rank-badge rank-I">I</span></td><td>橋梁点検車</td><td style="text-align:center">1</td><td>8m程度</td><td>30mを超え50m以下</td></tr>
+          <tr><td><span class="bridge-code">T-006</span></td><td><strong>田中橋</strong></td><td>農道A線</td><td>大字田中</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2019-04-15</td><td>📅 2024年</td><td><span class="rank-badge rank-III">III</span></td><td>リフト車</td><td style="text-align:center">1</td><td>4m程度</td><td>10mを超え15m以下</td></tr>
+          <tr><td><span class="bridge-code">T-007</span></td><td><strong>大正橋</strong></td><td>県道45号線</td><td>大字上町</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2022-03-08</td><td>📅 2026年</td><td><span class="rank-badge rank-II">II</span></td><td>渡り板</td><td style="text-align:center">1</td><td>4m程度</td><td>20mを超え30m以下</td></tr>
+          <tr><td><span class="bridge-code">T-008</span></td><td><strong>若葉橋</strong></td><td>町道3号線</td><td>大字若葉</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2023-10-30</td><td>📅 2029年</td><td><span class="rank-badge rank-I">I</span></td><td>目視のみ</td><td style="text-align:center">1</td><td>8m程度</td><td>30mを超え50m以下</td></tr>
+          <tr><td><span class="bridge-code">T-009</span></td><td><strong>谷口橋</strong></td><td>農道A線</td><td>大字谷口</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2018-06-01</td><td>📅 2019年</td><td><span class="rank-badge rank-IV">IV</span></td><td>リフト車</td><td style="text-align:center">1</td><td>4m程度</td><td>5mを超え10m以下</td></tr>
+          <tr><td><span class="bridge-code">T-010</span></td><td><strong>緑橋</strong></td><td>町道3号線</td><td>大字緑ケ丘</td><td><a class="map-link" href="#">📍 地図</a></td><td>📅 2023-08-22</td><td>📅 2029年</td><td><span class="rank-badge rank-I">I</span></td><td>目視のみ</td><td style="text-align:center">1</td><td>8m程度</td><td>50mを超え100m以下</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rank-legend" style="margin-top:10px">
+      <span><span class="rl-dot" style="background:#16a34a"></span>I : 健全</span>
+      <span><span class="rl-dot" style="background:#d97706"></span>II : 予防保全段階</span>
+      <span><span class="rl-dot" style="background:#ea580c"></span>III : 早期措置段階</span>
+      <span><span class="rl-dot" style="background:#dc2626"></span>IV : 緊急措置段階</span>
+    </div>
+  </div>
+
+  <!-- ===== 橋梁詳細 ===== -->
+  <div id="page-detail" class="page">
+    <div class="page-header">
+      <h1>🔍 橋梁詳細情報</h1>
+      <p>橋梁を選択して基本情報・点検・補修・ファイルを確認</p>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <select style="border:1.5px solid #cbd5e1; border-radius:8px; padding:8px 14px; font-size:0.9rem; min-width:300px">
+        <option>T-001 桜橋</option>
+        <option>T-002 松川橋</option>
+        <option>T-004 梅ノ木橋</option>
+        <option>T-009 谷口橋</option>
+      </select>
+    </div>
+
+    <div class="bridge-hero">
+      <div>
+        <div class="bh-code">T-001</div>
+        <div class="bh-name">桜橋</div>
+        <div class="bh-sub">町道1号線 ／ 大字桜町 ／ 架設年：1965年</div>
+      </div>
+      <span class="rank-badge rank-II" style="font-size:0.95rem; padding:5px 16px; margin-left:auto">ランク II（予防保全段階）</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('tab-basic', this)">📌 基本情報</button>
+      <button class="tab-btn" onclick="showTab('tab-insp', this)">🔬 点検履歴</button>
+      <button class="tab-btn" onclick="showTab('tab-repair', this)">🔧 補修履歴</button>
+      <button class="tab-btn" onclick="showTab('tab-files', this)">📁 ファイル管理</button>
+    </div>
+
+    <!-- 基本情報タブ -->
+    <div id="tab-basic" class="tab-pane active">
+      <div class="section-header"><span>📌 基本情報</span></div>
+      <div class="info-grid">
+        <div class="info-item"><div class="info-label">管理番号</div><div class="info-value">T-001</div></div>
+        <div class="info-item"><div class="info-label">橋梁名</div><div class="info-value">桜橋（サクラバシ）</div></div>
+        <div class="info-item"><div class="info-label">管理者</div><div class="info-value">○○町役場 建設課</div></div>
+        <div class="info-item"><div class="info-label">路線名</div><div class="info-value">町道1号線</div></div>
+        <div class="info-item"><div class="info-label">路線種別</div><div class="info-value">町道</div></div>
+        <div class="info-item"><div class="info-label">所在地</div><div class="info-value">大字桜町</div></div>
+      </div>
+      <div class="section-header" style="margin-top:1.2rem"><span>📐 諸元</span></div>
+      <div class="info-grid">
+        <div class="info-item"><div class="info-label">架設年</div><div class="info-value">1965年</div></div>
+        <div class="info-item"><div class="info-label">橋長</div><div class="info-value">18.5 m</div></div>
+        <div class="info-item"><div class="info-label">幅員</div><div class="info-value">5.5 m</div></div>
+        <div class="info-item"><div class="info-label">上部工形式</div><div class="info-value">RC中空床版橋</div></div>
+        <div class="info-item"><div class="info-label">下部工形式</div><div class="info-value">逆T式橋台</div></div>
+        <div class="info-item"><div class="info-label">橋梁材料</div><div class="info-value">RC</div></div>
+        <div class="info-item"><div class="info-label">径間数</div><div class="info-value">1</div></div>
+        <div class="info-item"><div class="info-label">橋長分類</div><div class="info-value">15mを超え20m以下</div></div>
+        <div class="info-item"><div class="info-label">幅員分類</div><div class="info-value">4m程度</div></div>
+      </div>
+      <div class="section-header" style="margin-top:1.2rem"><span>📍 位置情報</span></div>
+      <div class="map-placeholder" style="height:200px">
+        <div style="font-size:2rem">📍</div>
+        <div>位置：35.1234°N, 136.9012°E</div>
+      </div>
+    </div>
+
+    <!-- 点検履歴タブ -->
+    <div id="tab-insp" class="tab-pane">
+      <div class="section-header"><span>🔬 点検履歴（2件）</span></div>
+      <div class="insp-card rank-II-b">
+        <div class="ic-date">📅 2021-10-15　定期点検</div>
+        <div class="ic-title">健全性ランク <span class="rank-badge rank-II">II</span>　措置区分：C（予防保全）</div>
+        <div class="ic-body">主桁にひびわれ・漏水が確認された。予防保全措置が必要。</div>
+        <div class="ic-meta">点検者：田中 一郎（○○建設コンサルタント）　点検足場：橋梁点検車　次回：2026年　概算費用：350千円</div>
+      </div>
+      <div class="insp-card rank-II-b">
+        <div class="ic-date">📅 2016-06-20　定期点検</div>
+        <div class="ic-title">健全性ランク <span class="rank-badge rank-II">II</span>　措置区分：B（監視）</div>
+        <div class="ic-body">軽微なひびわれを確認。経過観察とする。</div>
+        <div class="ic-meta">点検者：鈴木 次郎（○○建設コンサルタント）　点検足場：梯子　次回：2026年</div>
+      </div>
+    </div>
+
+    <!-- 補修履歴タブ -->
+    <div id="tab-repair" class="tab-pane">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+        <div class="section-header" style="margin:0; border:none"><span>🔧 補修履歴（1件）</span></div>
+        <button class="btn-secondary" onclick="showToast('デモ版のため入力はできません')">➕ 新規入力</button>
+      </div>
+      <div class="repair-card">
+        <div class="rc-date">2021-03-15</div>
+        <div class="rc-type">床版補修</div>
+        <div class="rc-desc">断面修復材による床版欠損補修、鉄筋防錆処理</div>
+        <div class="rc-meta">施工：○○建設㈱ ／ 費用：1,850千円 ／ 保証期限：2026-03-14</div>
+      </div>
+    </div>
+
+    <!-- ファイル管理タブ -->
+    <div id="tab-files" class="tab-pane">
+      <div class="section-header"><span>📷 写真データ</span></div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px">
+        <div style="background:#f1f5f9; border-radius:8px; height:100px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.8rem; flex-direction:column; gap:4px">
+          <div style="font-size:1.8rem">🖼️</div>
+          <div>全景写真</div>
+        </div>
+        <div style="background:#f1f5f9; border-radius:8px; height:100px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.8rem; flex-direction:column; gap:4px">
+          <div style="font-size:1.8rem">🖼️</div>
+          <div>損傷写真</div>
+        </div>
+        <div style="background:#f1f5f9; border-radius:8px; height:100px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.8rem; flex-direction:column; gap:4px">
+          <div style="font-size:1.8rem">🖼️</div>
+          <div>補修後写真</div>
+        </div>
+        <div style="background:#e0f2fe; border-radius:8px; height:100px; display:flex; align-items:center; justify-content:center; color:#0284c7; font-size:0.8rem; flex-direction:column; gap:4px; cursor:pointer" onclick="showToast('デモ版のためアップロードはできません')">
+          <div style="font-size:1.8rem">＋</div>
+          <div>写真を追加</div>
+        </div>
+      </div>
+      <div class="section-header"><span>📄 点検調書・帳票</span></div>
+      <div style="background:#f8fafc; border-radius:8px; padding:12px 16px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:12px; margin-bottom:8px">
+        <span style="font-size:1.4rem">📕</span>
+        <div>
+          <div style="font-weight:600; font-size:0.88rem">点検調書_桜橋_2021.pdf</div>
+          <div style="font-size:0.75rem; color:#94a3b8">2021-10-16 ／ 点検調書 ／ 1.2MB</div>
+        </div>
+      </div>
+      <button class="btn-secondary" style="margin-top:8px" onclick="showToast('デモ版のためアップロードはできません')">📤 ファイルを追加</button>
+    </div>
+  </div>
+
+  <!-- ===== 点検記録入力 ===== -->
+  <div id="page-inspection" class="page">
+    <div class="page-header">
+      <h1>📋 点検記録入力</h1>
+      <p>点検結果を入力してデータベースに登録します</p>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="font-size:0.82rem; font-weight:600; color:#475569; display:block; margin-bottom:6px">対象橋梁を選択</label>
+      <select style="border:1.5px solid #cbd5e1; border-radius:8px; padding:8px 14px; font-size:0.9rem; min-width:300px">
+        <option>T-001 桜橋</option>
+        <option>T-002 松川橋</option>
+        <option>T-004 梅ノ木橋</option>
+      </select>
+    </div>
+
+    <div class="form-card">
+      <div class="section-header"><span>📝 点検基本情報</span></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>点検年月日</label>
+          <input type="date" value="2024-06-01">
+        </div>
+        <div class="form-group">
+          <label>点検種別</label>
+          <select><option>定期</option><option>緊急</option><option>初回</option></select>
+        </div>
+        <div class="form-group">
+          <label>健全性ランク</label>
+          <select>
+            <option>I : 健全</option>
+            <option selected>II : 予防保全段階</option>
+            <option>III : 早期措置段階</option>
+            <option>IV : 緊急措置段階</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>措置区分</label>
+          <select>
+            <option>A : 措置不要</option>
+            <option>B : 監視</option>
+            <option selected>C : 予防保全</option>
+            <option>D : 早期措置</option>
+            <option>E : 緊急措置</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>点検足場</label>
+          <select>
+            <option>地上</option>
+            <option>梯子</option>
+            <option selected>橋梁点検車(BT200)</option>
+            <option>橋梁点検車(BT400)</option>
+            <option>リフト車(高所作業車)</option>
+            <option>ドローン</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>点検者氏名</label>
+          <input type="text" placeholder="例：田中 一郎" value="田中 一郎">
+        </div>
+        <div class="form-group">
+          <label>点検機関名</label>
+          <input type="text" placeholder="例：○○建設コンサルタント" value="○○建設コンサルタント">
+        </div>
+        <div class="form-group">
+          <label>次回点検推奨年</label>
+          <input type="number" value="2029">
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label>補修概算費用（千円）</label>
+          <input type="number" value="350">
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top:1.2rem"><span>💬 所見・損傷状況</span></div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>総合所見</label>
+        <textarea>主桁にひびわれ・漏水が確認された。予防保全措置が必要。床版の一部に剥離が見られ、鉄筋の腐食が懸念される。</textarea>
+      </div>
+
+      <button class="btn-primary" onclick="showToast('デモ版のため登録はできません')">✅ 点検記録を登録する</button>
+    </div>
+  </div>
+
+  <!-- ===== 橋梁管理 ===== -->
+  <div id="page-manage" class="page">
+    <div class="page-header">
+      <h1>🏗️ 橋梁管理</h1>
+      <p>橋梁の新規追加・情報変更・削除</p>
+    </div>
+
+    <div class="mgmt-tabs">
+      <div class="mgmt-tab active" onclick="showMgmtTab('mgmt-add', this)">➕ 新規追加</div>
+      <div class="mgmt-tab" onclick="showMgmtTab('mgmt-edit', this)">✏️ 情報変更</div>
+      <div class="mgmt-tab" onclick="showMgmtTab('mgmt-del', this)">🗑️ 削除</div>
+    </div>
+
+    <!-- 新規追加 -->
+    <div id="mgmt-add" class="tab-pane active">
+      <div class="form-card">
+        <div class="section-header"><span>🔑 識別情報</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>管理番号 *</label>
+            <input type="text" placeholder="例：T-011">
+          </div>
+          <div class="form-group">
+            <label>橋梁名 *</label>
+            <input type="text" placeholder="例：新設橋">
+          </div>
+          <div class="form-group">
+            <label>橋梁名（カナ）</label>
+            <input type="text" placeholder="例：シンセツバシ">
+          </div>
+          <div class="form-group">
+            <label>管理者名</label>
+            <input type="text" placeholder="例：○○町役場 建設課" value="○○町役場 建設課">
+          </div>
+        </div>
+        <div class="section-header" style="margin-top:1rem"><span>🛣️ 路線情報</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>路線名</label>
+            <input type="text" placeholder="例：町道4号線">
+          </div>
+          <div class="form-group">
+            <label>路線種別</label>
+            <select><option>町道</option><option>県道</option><option>国道</option><option>農道</option></select>
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label>所在地</label>
+            <input type="text" placeholder="例：大字○○地先">
+          </div>
+        </div>
+        <div class="section-header" style="margin-top:1rem"><span>📐 諸元</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>架設年</label>
+            <input type="number" placeholder="例：2024">
+          </div>
+          <div class="form-group">
+            <label>橋長（m）</label>
+            <input type="number" placeholder="例：25.0">
+          </div>
+          <div class="form-group">
+            <label>幅員（m）</label>
+            <input type="number" placeholder="例：6.0">
+          </div>
+          <div class="form-group">
+            <label>径間数</label>
+            <input type="number" placeholder="例：1" value="1">
+          </div>
+          <div class="form-group">
+            <label>上部工形式</label>
+            <input type="text" placeholder="例：RC中空床版橋">
+          </div>
+          <div class="form-group">
+            <label>下部工形式</label>
+            <input type="text" placeholder="例：逆T式橋台">
+          </div>
+          <div class="form-group">
+            <label>橋梁材料</label>
+            <select><option>RC</option><option>PC</option><option>鋼</option><option>木</option><option>石</option></select>
+          </div>
+          <div class="form-group">
+            <label>健全性ランク</label>
+            <select><option>I : 健全</option><option>II</option><option>III</option><option>IV</option></select>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="showToast('デモ版のため登録はできません')">✅ 橋梁を登録する</button>
+      </div>
+    </div>
+
+    <!-- 情報変更 -->
+    <div id="mgmt-edit" class="tab-pane">
+      <div class="form-card">
+        <div style="margin-bottom:14px">
+          <label style="font-size:0.82rem; font-weight:600; color:#475569; display:block; margin-bottom:6px">変更する橋梁を選択</label>
+          <select style="border:1.5px solid #cbd5e1; border-radius:8px; padding:8px 14px; font-size:0.9rem; min-width:300px">
+            <option>T-001 桜橋</option>
+            <option>T-002 松川橋</option>
+            <option>T-004 梅ノ木橋</option>
+          </select>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>管理番号</label>
+            <input type="text" value="T-001">
+          </div>
+          <div class="form-group">
+            <label>橋梁名</label>
+            <input type="text" value="桜橋">
+          </div>
+          <div class="form-group">
+            <label>橋長（m）</label>
+            <input type="number" value="18.5">
+          </div>
+          <div class="form-group">
+            <label>幅員（m）</label>
+            <input type="number" value="5.5">
+          </div>
+          <div class="form-group">
+            <label>健全性ランク</label>
+            <select><option>I</option><option selected>II</option><option>III</option><option>IV</option></select>
+          </div>
+          <div class="form-group">
+            <label>管理者名</label>
+            <input type="text" value="○○町役場 建設課">
+          </div>
+        </div>
+        <button class="btn-primary" onclick="showToast('デモ版のため保存はできません')">💾 変更を保存する</button>
+      </div>
+    </div>
+
+    <!-- 削除 -->
+    <div id="mgmt-del" class="tab-pane">
+      <div class="form-card">
+        <div style="margin-bottom:14px">
+          <label style="font-size:0.82rem; font-weight:600; color:#475569; display:block; margin-bottom:6px">対象橋梁を選択</label>
+          <select style="border:1.5px solid #cbd5e1; border-radius:8px; padding:8px 14px; font-size:0.9rem; min-width:300px">
+            <option>T-001 桜橋</option>
+            <option>T-002 松川橋</option>
+            <option>T-004 梅ノ木橋</option>
+          </select>
+        </div>
+        <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; padding:1rem; margin-bottom:12px">
+          <div style="font-size:0.75rem; color:#64748b">T-001</div>
+          <div style="font-size:1.1rem; font-weight:700; color:#1e293b">桜橋</div>
+          <div style="font-size:0.82rem; color:#64748b; margin-top:4px">架設 1965年　橋長 18.5m</div>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#475569; margin-bottom:12px">
+          関連データ：点検 2件　補修 1件　写真 0件　帳票 1件
+        </div>
+        <div class="two-col">
+          <div>
+            <div style="font-weight:700; margin-bottom:6px">📦 アーカイブ</div>
+            <div style="font-size:0.8rem; color:#64748b; margin-bottom:8px">一覧から非表示にします（データは保持）</div>
+            <button class="btn-secondary" onclick="showToast('デモ版のため操作はできません')">📦 アーカイブする</button>
+          </div>
+          <div>
+            <div style="font-weight:700; margin-bottom:6px; color:#dc2626">⛔ 完全削除</div>
+            <div style="font-size:0.8rem; color:#64748b; margin-bottom:8px">すべてのデータを削除します（取り消し不可）</div>
+            <div class="form-group" style="margin-bottom:8px">
+              <label>確認のため管理番号「T-001」を入力</label>
+              <input type="text" placeholder="管理番号を入力">
+            </div>
+            <button style="background:#dc2626; color:white; border:none; padding:8px 18px; border-radius:6px; font-size:0.85rem; cursor:pointer; font-weight:600" onclick="showToast('デモ版のため削除はできません')">⛔ 完全削除を実行</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.main -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function showPage(id, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    el.classList.add('active');
+  }
+
+  function showTab(id, el) {
+    const parent = el.closest('.page') || document;
+    parent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active');
+  }
+
+  function showMgmtTab(id, el) {
+    document.querySelectorAll('#page-manage .tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.mgmt-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    el.classList.add('active');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>
