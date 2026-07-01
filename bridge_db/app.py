@@ -331,11 +331,85 @@ html, body, [class*="css"] { font-family: 'Noto Sans JP', sans-serif; }
     border-bottom: 2px solid #2563eb !important;
 }
 
-/* ── 入力フォーム ────────────────────────────────── */
-.stTextInput input, .stSelectbox select, .stTextArea textarea,
+/* ── 入力フォーム（テキスト・日付・数値）────────── */
+.stTextInput input, .stTextArea textarea,
 .stDateInput input, .stNumberInput input {
-    border-radius: 8px !important; border-color: #cbd5e1 !important;
+    background: #ffffff !important;
+    border: 1.5px solid #94a3b8 !important;
+    border-radius: 8px !important;
+    color: #1e293b !important;
 }
+.stTextInput input:focus, .stTextArea textarea:focus,
+.stDateInput input:focus, .stNumberInput input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important;
+}
+
+/* ── Selectbox（プルダウン）────────────────────── */
+[data-testid="stSelectbox"] [data-baseweb="select"] > div:first-child {
+    background-color: #ffffff !important;
+    border: 1.5px solid #94a3b8 !important;
+    border-radius: 8px !important;
+    color: #1e293b !important;
+}
+[data-testid="stSelectbox"] [data-baseweb="select"]:focus-within > div:first-child {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important;
+}
+/* Selectbox 選択中テキスト */
+[data-testid="stSelectbox"] [data-baseweb="select"] span {
+    color: #1e293b !important;
+}
+/* Selectboxドロップダウンリスト（選択肢） */
+[data-baseweb="popover"] [role="listbox"] {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+}
+[data-baseweb="popover"] [role="option"] {
+    color: #1e293b !important;
+    background: #ffffff !important;
+}
+[data-baseweb="popover"] [role="option"]:hover,
+[data-baseweb="popover"] [aria-selected="true"] {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+}
+
+/* ── Multiselect（複数選択）─────────────────────── */
+[data-testid="stMultiSelect"] [data-baseweb="select"] > div:first-child {
+    background-color: #ffffff !important;
+    border: 1.5px solid #94a3b8 !important;
+    border-radius: 8px !important;
+    min-height: 2.4rem !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="select"]:focus-within > div:first-child {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important;
+}
+/* Multiselect タグ（選択済み項目） */
+[data-testid="stMultiSelect"] [data-baseweb="tag"] {
+    background-color: #dbeafe !important;
+    border-radius: 4px !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="tag"] span {
+    color: #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+
+/* ── Radio ─────────────────────────────────────── */
+[data-testid="stRadio"] label {
+    color: #1e293b !important;
+}
+
+/* ── File uploader ──────────────────────────────── */
+[data-testid="stFileUploader"] > div {
+    background: #ffffff !important;
+    border: 1.5px dashed #94a3b8 !important;
+    border-radius: 8px !important;
+}
+
 .stForm {
     background: white; border-radius: 12px;
     padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
