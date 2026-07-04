@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
   SafeAreaView,
   Platform,
 } from 'react-native';
@@ -28,17 +27,12 @@ const TABS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(0);
-  const [loading, setLoading] = useState(true);
   const webViewRefs = useRef([]);
-  const loadingTimerRef = useRef(null);
 
   const currentTab = TABS[activeTab];
 
   const handleTabPress = (index) => {
-    if (index !== activeTab) {
-      setActiveTab(index);
-      setLoading(true);
-    }
+    setActiveTab(index);
   };
 
   const handleNavBack = () => {
@@ -50,7 +44,6 @@ export default function App() {
   };
 
   const handleReload = () => {
-    setLoading(true);
     webViewRefs.current[activeTab]?.reload();
   };
 
@@ -79,7 +72,7 @@ export default function App() {
         ))}
       </View>
 
-      {/* WebViews (rendered for both tabs to preserve state) */}
+      {/* WebViews */}
       <View style={styles.webViewContainer}>
         {TABS.map((tab, index) => (
           <WebView
@@ -87,40 +80,18 @@ export default function App() {
             ref={(ref) => { webViewRefs.current[index] = ref; }}
             source={{ uri: tab.url }}
             style={[styles.webView, activeTab !== index && styles.hidden]}
-            onLoadStart={() => {
-              if (activeTab === index) {
-                setLoading(true);
-                if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-                loadingTimerRef.current = setTimeout(() => setLoading(false), 12000);
-              }
-            }}
-            onLoadEnd={() => {
-              if (activeTab === index) {
-                if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
-                setTimeout(() => setLoading(false), 1500);
-              }
-            }}
-            onError={() => { if (activeTab === index) setLoading(false); }}
             javaScriptEnabled
             domStorageEnabled
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
+            startInLoadingState={true}
             userAgent={
               Platform.OS === 'android'
-                ? 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36'
+                ? 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36'
                 : 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17 Mobile Safari/604.1'
             }
           />
         ))}
-
-        {/* Loading overlay */}
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <Text style={styles.loadingEmoji}>🌉</Text>
-            <ActivityIndicator size="large" color="#1e3a5f" style={{ marginTop: 16 }} />
-            <Text style={styles.loadingText}>読み込み中...</Text>
-          </View>
-        )}
       </View>
 
       {/* Navigation Bar */}
@@ -144,7 +115,6 @@ export default function App() {
 
 const HEADER_BG = '#1e3a5f';
 const TAB_BG = '#f1f5f9';
-const TAB_ACTIVE_BG = '#1e3a5f';
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -194,7 +164,6 @@ const styles = StyleSheet.create({
   },
   webViewContainer: {
     flex: 1,
-    position: 'relative',
   },
   webView: {
     flex: 1,
@@ -204,20 +173,6 @@ const styles = StyleSheet.create({
     width: 0,
     height: 0,
     opacity: 0,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#f8fafc',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingEmoji: {
-    fontSize: 56,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#64748b',
   },
   navBar: {
     flexDirection: 'row',
