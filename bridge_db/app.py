@@ -634,7 +634,6 @@ def render_bridge_table(df) -> str:
           <td>{next_cell}</td>
           <td>{dot}{rank}</td>
           <td>{access}</td>
-          <td style="text-align:center;color:#64748b">{insp_cnt}</td>
           <td>{_width_category(bwidth)}</td>
           <td>{_length_category(blength)}</td>
         </tr>""")
@@ -644,7 +643,7 @@ def render_bridge_table(df) -> str:
   <thead><tr>
     <th>管理番号</th><th>橋梁名</th><th>路線名</th><th>所在地</th>
     <th>地図</th><th>前回点検</th><th>次回点検予定</th>
-    <th>健全性</th><th>点検足場</th><th>点検数</th>
+    <th>健全性</th><th>点検足場</th>
     <th>幅員分類</th><th>橋長分類</th>
   </tr></thead>
   <tbody>{rows_html}</tbody>
