@@ -30,6 +30,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const webViewRefs = useRef([]);
+  const loadingTimerRef = useRef(null);
 
   const currentTab = TABS[activeTab];
 
@@ -86,8 +87,19 @@ export default function App() {
             ref={(ref) => { webViewRefs.current[index] = ref; }}
             source={{ uri: tab.url }}
             style={[styles.webView, activeTab !== index && styles.hidden]}
-            onLoadStart={() => { if (activeTab === index) setLoading(true); }}
-            onLoadEnd={() => { if (activeTab === index) setLoading(false); }}
+            onLoadStart={() => {
+              if (activeTab === index) {
+                setLoading(true);
+                if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+                loadingTimerRef.current = setTimeout(() => setLoading(false), 12000);
+              }
+            }}
+            onLoadEnd={() => {
+              if (activeTab === index) {
+                if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+                setTimeout(() => setLoading(false), 1500);
+              }
+            }}
             onError={() => { if (activeTab === index) setLoading(false); }}
             javaScriptEnabled
             domStorageEnabled
