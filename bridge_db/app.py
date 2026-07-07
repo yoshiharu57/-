@@ -37,7 +37,7 @@ PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".webp"}
 DOC_EXTS   = {".pdf", ".xlsx", ".xls", ".docx", ".doc", ".csv"}
 PHOTO_TYPES_LIST  = ["全景", "損傷", "補修後", "その他"]
 DOC_TYPES_LIST    = ["点検調書", "損傷図", "補修設計書", "その他"]
-ACCESS_METHOD_LIST = ["地上", "梯子", "橋梁点検車（BT-200）", "橋梁点検車（BT-400）", "ドローン"]
+ACCESS_METHOD_LIST = ["地上", "梯子", "リフト車（高所作業車）", "橋梁点検車（BT-200）", "橋梁点検車（BT-400）", "ドローン"]
 
 # ──────────────────────────────────────────────────────────
 # ページ設定
@@ -643,7 +643,7 @@ def render_bridge_table(df) -> str:
   <thead><tr>
     <th>管理番号</th><th>橋梁名</th><th>路線名</th><th>所在地</th>
     <th>地図</th><th>前回点検</th><th>次回点検予定</th>
-    <th>健全性</th><th>点検足場</th>
+    <th>健全性</th><th>点検方法</th>
     <th>幅員分類</th><th>橋長分類</th>
   </tr></thead>
   <tbody>{rows_html}</tbody>
@@ -689,6 +689,22 @@ with sqlite3.connect(DB_PATH) as _mc:
         _mc.commit()
     except sqlite3.OperationalError:
         pass
+
+# DB マイグレーション: 第三者被害関連列の追加
+_THIRD_PARTY_COLS = [
+    "ALTER TABLE inspections ADD COLUMN third_party_risk TEXT",
+    "ALTER TABLE inspections ADD COLUMN under_bridge_condition TEXT",
+    "ALTER TABLE inspections ADD COLUMN traffic_volume TEXT",
+    "ALTER TABLE inspections ADD COLUMN protection_facility TEXT",
+    "ALTER TABLE inspections ADD COLUMN third_party_notes TEXT",
+]
+with sqlite3.connect(DB_PATH) as _mc:
+    for _sql in _THIRD_PARTY_COLS:
+        try:
+            _mc.execute(_sql)
+            _mc.commit()
+        except sqlite3.OperationalError:
+            pass
 
 
 @st.cache_resource
@@ -2172,7 +2188,7 @@ elif page == "📋 点検記録入力":
                                           format_func=lambda x: RANK_LABEL[x])
             countermeasure = st.selectbox("措置区分", ["A", "B", "C", "D", "E"],
                                           format_func=lambda x: COUNTERMEASURE_LABEL[x])
-            access_method  = st.selectbox("点検足場", ACCESS_METHOD_LIST)
+            access_method  = st.selectbox("点検方法", ACCESS_METHOD_LIST)
         with col2:
             inspector_name = st.text_input("点検者氏名")
             inspector_org  = st.text_input("点検機関名")
@@ -2182,6 +2198,34 @@ elif page == "📋 点検記録入力":
         st.markdown("<br>", unsafe_allow_html=True)
         section_header("💬", "所見・損傷状況")
         overall = st.text_area("総合所見", height=100)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        section_header("🚨", "第三者被害リスク")
+        col_tp1, col_tp2 = st.columns(2)
+        with col_tp1:
+            third_party_risk = st.selectbox(
+                "第三者被害リスク",
+                ["低（影響軽微）", "中（要監視）", "高（早期対応必要）"],
+                help="橋梁損傷が第三者へ与える被害の程度"
+            )
+            under_bridge_condition = st.selectbox(
+                "路下条件",
+                ["道路（一般道）", "道路（高速・幹線）", "鉄道", "河川・水路", "住宅地・市街地", "農地・山林", "その他"],
+                help="橋梁直下の状況"
+            )
+        with col_tp2:
+            traffic_volume = st.selectbox(
+                "路下通行量",
+                ["多い（主要道路・市街地）", "普通", "少ない（農道・林道等）", "ほぼなし"],
+                help="橋梁下を通行する人・車の量"
+            )
+            protection_facility = st.selectbox(
+                "防護施設の状況",
+                ["あり（良好）", "あり（要補修）", "なし（設置不要）", "なし（設置が必要）"],
+                help="落下物防止ネット・防護柵等の設置状況"
+            )
+        third_party_notes = st.text_area("第三者被害に関する特記事項", height=80,
+                                          placeholder="例：路下に住宅あり、落下物リスク高い等")
 
         st.markdown("<br>", unsafe_allow_html=True)
         submitted = st.form_submit_button("✅ 点検記録を登録する", type="primary", use_container_width=True)
@@ -2194,11 +2238,15 @@ elif page == "📋 点検記録入力":
                     inspector_org, health_rank, overall_judgment,
                     damage_superstructure,
                     countermeasure_type, next_inspection_year, estimated_cost,
-                    access_method)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    access_method,
+                    third_party_risk, under_bridge_condition,
+                    traffic_volume, protection_facility, third_party_notes)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (bridge_id, str(insp_date), insp_type, inspector_name,
                  inspector_org, health_rank, overall, None,
-                 countermeasure, next_year, est_cost, access_method),
+                 countermeasure, next_year, est_cost, access_method,
+                 third_party_risk, under_bridge_condition,
+                 traffic_volume, protection_facility, third_party_notes),
             )
             con.execute(
                 "UPDATE bridges SET current_health_rank=?, updated_at=datetime('now','localtime') WHERE bridge_id=?",
