@@ -1540,11 +1540,7 @@ elif page == "📋 橋梁一覧":
                 tooltip=f"{r_l['bridge_code']} {r_l['bridge_name']}（ランク{r_l['current_health_rank']}）",
             ).add_to(m_l)
         st_folium(m_l, width=None, height=420, use_container_width=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    section_header("🌉", f"橋梁一覧（{len(df_list_l)}件）")
-    st.markdown(render_bridge_table(df_list_l), unsafe_allow_html=True)
-    st.markdown("""
+        st.markdown("""
 <div class="rank-legend">
   <span class="rl-item"><span class="rl-dot" style="background:#16a34a"></span>I : 健全</span>
   <span class="rl-item"><span class="rl-dot" style="background:#d97706"></span>II : 予防保全段階</span>
@@ -1552,6 +1548,10 @@ elif page == "📋 橋梁一覧":
   <span class="rl-item"><span class="rl-dot" style="background:#dc2626"></span>IV : 緊急措置段階</span>
 </div>
 """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    section_header("🌉", f"橋梁一覧（{len(df_list_l)}件）")
+    st.markdown(render_bridge_table(df_list_l), unsafe_allow_html=True)
 
 
 # ──────────────────────────────────────────────────────────
