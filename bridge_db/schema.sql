@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS inspections (
     damage_substructure     TEXT,               -- 下部工損傷状況
     damage_bearing          TEXT,               -- 支承損傷状況
     damage_road_surface     TEXT,               -- 路面・排水損傷状況
+    third_party_damage      TEXT,               -- 第三者被害の有無・判定
+    third_party_damage_note TEXT,               -- 第三者被害に関する所見・対応
 
     -- 対策区分
     countermeasure_type TEXT,                   -- 措置区分（A/B/C/D/E）
@@ -83,8 +85,8 @@ CREATE TABLE IF NOT EXISTS inspections (
     -- 費用（概算）
     estimated_cost      INTEGER,                -- 補修概算費用（千円）
 
-    -- 点検足場
-    access_method       TEXT,                   -- 点検足場（橋梁点検車/リフト車/梯子/目視のみ/渡り板/その他）
+    -- 点検方法
+    access_method       TEXT,                   -- 点検方法（橋梁点検車/リフト車/梯子/目視のみ/渡り板/その他）
 
     created_at          TEXT DEFAULT (datetime('now', 'localtime'))
 );
