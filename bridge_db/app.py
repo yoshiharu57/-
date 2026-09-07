@@ -37,7 +37,8 @@ PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".heic", ".webp"}
 DOC_EXTS   = {".pdf", ".xlsx", ".xls", ".docx", ".doc", ".csv"}
 PHOTO_TYPES_LIST  = ["全景", "損傷", "補修後", "その他"]
 DOC_TYPES_LIST    = ["点検調書", "損傷図", "補修設計書", "その他"]
-ACCESS_METHOD_LIST = ["地上", "梯子", "橋梁点検車（BT-200）", "橋梁点検車（BT-400）", "ドローン"]
+ACCESS_METHOD_LIST = ["地上", "梯子", "橋梁点検車（BT-200）", "橋梁点検車（BT-400）", "高所作業者", "ドローン"]
+THIRD_PARTY_DAMAGE_LIST = ["なし", "あり", "要確認", "対象外"]
 
 # ──────────────────────────────────────────────────────────
 # ページ設定
@@ -643,7 +644,7 @@ def render_bridge_table(df) -> str:
   <thead><tr>
     <th>管理番号</th><th>橋梁名</th><th>路線名</th><th>所在地</th>
     <th>地図</th><th>前回点検</th><th>次回点検予定</th>
-    <th>健全性</th><th>点検足場</th>
+    <th>健全性</th><th>点検方法</th>
     <th>幅員分類</th><th>橋長分類</th>
   </tr></thead>
   <tbody>{rows_html}</tbody>
@@ -682,13 +683,18 @@ def _ensure_db():
 
 _ensure_db()
 
-# DB マイグレーション: access_method 列がなければ追加
+# DB マイグレーション: 既存DBに不足列があれば追加
 with sqlite3.connect(DB_PATH) as _mc:
-    try:
-        _mc.execute("ALTER TABLE inspections ADD COLUMN access_method TEXT")
-        _mc.commit()
-    except sqlite3.OperationalError:
-        pass
+    for _column_sql in (
+        "ALTER TABLE inspections ADD COLUMN access_method TEXT",
+        "ALTER TABLE inspections ADD COLUMN third_party_damage TEXT",
+        "ALTER TABLE inspections ADD COLUMN third_party_damage_note TEXT",
+    ):
+        try:
+            _mc.execute(_column_sql)
+            _mc.commit()
+        except sqlite3.OperationalError:
+            pass
 
 
 @st.cache_resource
@@ -1534,11 +1540,7 @@ elif page == "📋 橋梁一覧":
                 tooltip=f"{r_l['bridge_code']} {r_l['bridge_name']}（ランク{r_l['current_health_rank']}）",
             ).add_to(m_l)
         st_folium(m_l, width=None, height=420, use_container_width=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    section_header("🌉", f"橋梁一覧（{len(df_list_l)}件）")
-    st.markdown(render_bridge_table(df_list_l), unsafe_allow_html=True)
-    st.markdown("""
+        st.markdown("""
 <div class="rank-legend">
   <span class="rl-item"><span class="rl-dot" style="background:#16a34a"></span>I : 健全</span>
   <span class="rl-item"><span class="rl-dot" style="background:#d97706"></span>II : 予防保全段階</span>
@@ -1546,6 +1548,10 @@ elif page == "📋 橋梁一覧":
   <span class="rl-item"><span class="rl-dot" style="background:#dc2626"></span>IV : 緊急措置段階</span>
 </div>
 """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    section_header("🌉", f"橋梁一覧（{len(df_list_l)}件）")
+    st.markdown(render_bridge_table(df_list_l), unsafe_allow_html=True)
 
 
 # ──────────────────────────────────────────────────────────
@@ -1984,7 +1990,9 @@ elif page == "🔍 橋梁詳細":
         df_insp = query_df(
             """SELECT inspection_date, inspection_type, health_rank,
                       countermeasure_type, overall_judgment, inspector_name,
-                      inspector_org, estimated_cost
+                      inspector_org, estimated_cost,
+                      COALESCE(third_party_damage, '未記録') AS third_party_damage,
+                      third_party_damage_note
                FROM inspections WHERE bridge_id=? ORDER BY inspection_date DESC""",
             (bridge_id,),
         )
@@ -1995,6 +2003,14 @@ elif page == "🔍 橋梁詳細":
                 rank   = row["health_rank"]
                 cm     = COUNTERMEASURE_LABEL.get(row["countermeasure_type"], row["countermeasure_type"] or "-")
                 cost   = f"補修概算: {row['estimated_cost']:,} 千円" if row["estimated_cost"] else ""
+                third_party = row["third_party_damage"] or "未記録"
+                third_party_note = row["third_party_damage_note"] or ""
+                third_party_html = (
+                    f"<div class=\"ic-meta\">第三者被害: {third_party}</div>"
+                    f"<div class=\"ic-body\" style=\"margin-top:0.35rem\">{third_party_note}</div>"
+                    if third_party_note
+                    else f"<div class=\"ic-meta\">第三者被害: {third_party}</div>"
+                )
                 st.markdown(f"""
 <div class="insp-card rank-{rank}-border">
   <div class="ic-date">📅 {row['inspection_date']}　{row['inspection_type']}</div>
@@ -2003,6 +2019,7 @@ elif page == "🔍 橋梁詳細":
     <span style="font-size:0.85rem;color:#475569">{cm}</span>
   </div>
   <div class="ic-body">{row['overall_judgment'] or '-'}</div>
+  {third_party_html}
   <div class="ic-meta">
     点検機関: {row['inspector_org'] or '-'}　｜
     点検者: {row['inspector_name'] or '-'}
@@ -2172,15 +2189,21 @@ elif page == "📋 点検記録入力":
                                           format_func=lambda x: RANK_LABEL[x])
             countermeasure = st.selectbox("措置区分", ["A", "B", "C", "D", "E"],
                                           format_func=lambda x: COUNTERMEASURE_LABEL[x])
-            access_method  = st.selectbox("点検足場", ACCESS_METHOD_LIST)
+            access_method  = st.selectbox("点検方法", ACCESS_METHOD_LIST)
         with col2:
             inspector_name = st.text_input("点検者氏名")
             inspector_org  = st.text_input("点検機関名")
             next_year      = st.number_input("次回点検推奨年", min_value=2020, max_value=2100, value=2029)
             est_cost       = st.number_input("補修概算費用（千円）", min_value=0, value=0)
+            third_party_damage = st.selectbox("第三者被害", THIRD_PARTY_DAMAGE_LIST)
 
         st.markdown("<br>", unsafe_allow_html=True)
         section_header("💬", "所見・損傷状況")
+        third_party_damage_note = st.text_area(
+            "第三者被害に関する所見・対応",
+            height=80,
+            placeholder="例: コンクリート片の剥落による第三者被害のおそれあり。防護措置・早期補修を検討。",
+        )
         overall = st.text_area("総合所見", height=100)
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -2194,11 +2217,12 @@ elif page == "📋 点検記録入力":
                     inspector_org, health_rank, overall_judgment,
                     damage_superstructure,
                     countermeasure_type, next_inspection_year, estimated_cost,
-                    access_method)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    access_method, third_party_damage, third_party_damage_note)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (bridge_id, str(insp_date), insp_type, inspector_name,
                  inspector_org, health_rank, overall, None,
-                 countermeasure, next_year, est_cost, access_method),
+                 countermeasure, next_year, est_cost, access_method,
+                 third_party_damage, third_party_damage_note),
             )
             con.execute(
                 "UPDATE bridges SET current_health_rank=?, updated_at=datetime('now','localtime') WHERE bridge_id=?",
