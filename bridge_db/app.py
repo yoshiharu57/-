@@ -1518,7 +1518,7 @@ elif page == "📋 橋梁一覧":
         center_lat_l = df_list_l["latitude"].dropna().mean()
         center_lon_l = df_list_l["longitude"].dropna().mean()
         m_l = folium.Map(location=[center_lat_l, center_lon_l], zoom_start=14,
-                         tiles="CartoDB positron")
+                         tiles="OpenStreetMap")
         for _, r_l in df_list_l.iterrows():
             if pd.isna(r_l["latitude"]):
                 continue
@@ -1814,7 +1814,7 @@ elif page == "🗺️ 地図":
         center_lat = df["latitude"].dropna().mean()
         center_lon = df["longitude"].dropna().mean()
         m = folium.Map(location=[center_lat, center_lon], zoom_start=14,
-                       tiles="CartoDB positron")
+                       tiles="OpenStreetMap")
         for _, r in df.iterrows():
             if pd.isna(r["latitude"]):
                 continue
@@ -1974,7 +1974,7 @@ elif page == "🔍 橋梁詳細":
         if b["latitude"] and b["longitude"]:
             st.markdown("<br>", unsafe_allow_html=True)
             m2 = folium.Map(location=[b["latitude"], b["longitude"]], zoom_start=16,
-                            tiles="CartoDB positron")
+                            tiles="OpenStreetMap")
             folium.Marker(
                 [b["latitude"], b["longitude"]],
                 popup=folium.Popup(
